@@ -49,14 +49,14 @@ struct Vec3 {
 		return a.x * b.x + a.y * b.y + a.z * b.z;
 	}
 };
-Vec3 cameraPosition = { 0.0f, 0.0f, 5.0f }; // Camera starting position
+Vec3 cameraPosition = { 0.0f, 0.0f, 8.0f }; // Camera starting position
 Vec3 target = { 0.0f, 0.0f, 0.0f };         // Point the camera looks at
 Vec3 upVector = { 0.0f, 1.0f, 0.0f };       // Up direction
-float radius = 5.0f;              // Distance from camera to target
+float radius = 8.0f;              // Distance from camera to target
 float yaw = 0.0f;                 // Horizontal angle (in radians)
 float pitch = 0.0f;               // Vertical angle (in radians)
-
-
+GLenum style_glu= GLU_LINE,style_gl=GL_LINE_LOOP;
+int style_switch;
 GLUquadricObj* obj = NULL;
 LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -67,6 +67,30 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 		break;
 
 	case WM_KEYDOWN:
+		if (wParam == 'P') {
+			
+			style_switch %= 3;
+			switch (style_switch)
+			{
+			case 0:
+				style_glu = GLU_POINT;
+				style_gl = GL_POINTS;
+				break;
+			case 1:
+				style_glu = GLU_LINE;
+				style_gl = GL_LINE_LOOP;
+				break;
+			case 2:
+				style_glu = GLU_FILL;
+				style_gl = GL_POLYGON;
+				break;
+			default:
+				style_glu = GLU_LINE;
+				style_gl = GL_LINE_LOOP;
+				break;
+			}
+			style_switch++;
+		}
 		if (wParam == VK_ESCAPE) PostQuitMessage(0);
 		if (wParam == VK_UP) { pitch += speed; }
 		if (wParam == VK_DOWN) { pitch -= speed; }
@@ -122,6 +146,52 @@ bool initPixelFormat(HDC hdc)
 	}
 }
 //--------------------------------------------------------------------
+void rect(float x, float y, float z,GLenum style) {
+
+	//bottom
+	glBegin(style);
+	glVertex3f(0.0f, 0.0f, z);
+	glVertex3f(x , 0.0f, z);
+	glVertex3f(x , 0.0f, 0.0f);
+	glVertex3f(0.0f, 0.0f, 0.0f);
+	glEnd();
+	//left
+	glBegin(style);
+	glVertex3f(0.0f, 0.0f, 0.0f);
+	glVertex3f(0.0, y, 0.0);
+	glVertex3f(0.0, y, z);
+	glVertex3f(0.0f, 0.0f, z);
+	glEnd();
+	//front
+	glBegin(style);
+	glVertex3f(0.0f, 0.0f, z);
+	glVertex3f(0.0f, y, z);
+	glVertex3f(x, y, z);
+	glVertex3f(x, 0.0f, z);
+	glEnd();
+	//right
+	glBegin(style);
+	glVertex3f(x, 0.0f, z);
+	glVertex3f(x, y, z);
+	glVertex3f(x, y, 0.0f);
+	glVertex3f(x, 0.0f, 0.0f);
+	glEnd();
+	//back
+	glBegin(style);
+	glVertex3f(x, 0.0f, 0.0f);
+	glVertex3f(0.0f, 0.0f, 0.0f);
+	glVertex3f(0.0, y, 0.0);
+	glVertex3f(x, y, 0.0f);
+	glEnd();
+	//top 
+	glBegin(style);
+	glVertex3f(x, y, 0.0f);
+	glVertex3f(0.0, y, 0.0);
+	glVertex3f(0.0f, y, z);
+	glVertex3f(x , y, z);
+	glEnd();
+}
+
 void sphere(float radius, float slice, float stack, GLenum style) {
 	obj = gluNewQuadric();
 	gluQuadricDrawStyle(obj, style);
@@ -168,34 +238,28 @@ void camera() {
 	gluLookAt(cameraPosition.x, cameraPosition.y, cameraPosition.z,
 		target.x, target.y, target.z,
 		upVector.x,upVector.y,upVector.z);
+
 }
 
 void display()
 {
+	glClearColor(0.498, 0.498, 0.498, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+
 	glPushMatrix();
 	camera();
 
+	glPushMatrix();
+	glRotatef(-90, 1, 0, 0);
 
-
-	glColor3f(1, 0, 0);
-	sphere(0.4,20,20,GLU_LINE);
 	
-	glPushMatrix();
-	glTranslatef(0, 0.4, 0);
-	sphere(0.1, 20, 20, GL_FILL);
-	glPopMatrix();
-
-	glPushMatrix();
-	glColor3f(0, 0, 1);
-	glTranslatef(0, -0.4, 0);
-	sphere(0.1, 20, 20, GL_FILL);
-	glPopMatrix();
+	
 
 
-
-	glPopMatrix();
+	glPopMatrix();// r90
+	glPopMatrix();//camera
 }
 //--------------------------------------------------------------------
 
@@ -233,7 +297,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int nCmdShow)
 	glEnable(GL_DEPTH_TEST);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(20, 800/600, 0.0001, 9999);
+	gluPerspective(60, 800/600, 0.0001, 9999);
 	//--------------------------------
 	//	End initialization
 	//--------------------------------
