@@ -241,6 +241,40 @@ void camera() {
 
 }
 
+void body_upper() {
+	glPushMatrix();
+	glTranslatef(0, -2, 0);
+	glRotatef(-90, 1, 0, 0);
+
+	glPushMatrix();
+	glColor3f(0, 0, 0);
+	cylinder(1, 1, 3, 20, 20, style_glu);
+	glPopMatrix();
+
+	glPushMatrix();
+	glColor3f(0, 0, 0);
+	glTranslatef(0, 0, 1);
+	cylinder(0.7, 1.2, 2, 20, 20, style_glu);
+	glPopMatrix();
+
+	glPushMatrix();
+	glColor3f(0, 0, 0);
+	cylinder(1.2, 0.7, 2, 20, 20, style_glu);
+	glPopMatrix();
+
+	for (int i = 0; i < 10; i++) {
+		glPushMatrix();
+
+		glRotatef((360 / 10) * i, 0, 0, 1);
+		glColor3f(0, 0, 0);
+		rect(1.18, 0.2, 3, style_gl);
+		glPopMatrix();
+	}
+
+
+	glPopMatrix();// r90
+}
+
 void display()
 {
 	glClearColor(0.498, 0.498, 0.498, 0);
@@ -251,14 +285,8 @@ void display()
 	glPushMatrix();
 	camera();
 
-	glPushMatrix();
-	glRotatef(-90, 1, 0, 0);
+	body_upper();
 
-	
-	
-
-
-	glPopMatrix();// r90
 	glPopMatrix();//camera
 }
 //--------------------------------------------------------------------
