@@ -11,6 +11,7 @@
 const float PI = 3.141592f, speed = 0.05;
 
 //---------------------------------------------------------------
+
 struct Vec3 {
 	float x, y, z;
 
@@ -49,15 +50,19 @@ struct Vec3 {
 		return a.x * b.x + a.y * b.y + a.z * b.z;
 	}
 };
+
+int windowWidth = 800, windowHeight = 600;
+
 Vec3 cameraPosition = { 0.0f, 0.0f, 8.0f }; // Camera starting position
 Vec3 target = { 0.0f, 0.0f, 0.0f };         // Point the camera looks at
 Vec3 upVector = { 0.0f, 1.0f, 0.0f };       // Up direction
 float radius = 8.0f;              // Distance from camera to target
 float yaw = 0.0f;                 // Horizontal angle (in radians)
 float pitch = 0.0f;               // Vertical angle (in radians)
-GLenum style_glu= GLU_LINE,style_gl=GL_LINE_LOOP;
+GLenum style_glu = GLU_LINE, style_gl = GL_LINE_LOOP;
 int style_switch;
 GLUquadricObj* obj = NULL;
+
 LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
@@ -113,6 +118,7 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
+
 //--------------------------------------------------------------------
 
 bool initPixelFormat(HDC hdc)
@@ -145,8 +151,10 @@ bool initPixelFormat(HDC hdc)
 		return false;
 	}
 }
+
 //--------------------------------------------------------------------
-void rect(float x, float y, float z,GLenum style) {
+
+void rect(float x, float y, float z, GLenum style) {
 
 	//bottom
 	glBegin(style);
@@ -198,6 +206,7 @@ void sphere(float radius, float slice, float stack, GLenum style) {
 	gluSphere(obj, radius, slice, stack);
 	gluDeleteQuadric(obj);
 }
+
 void cylinder(float bottom, float top, float height, int slice, int stack, GLenum style) {
 	obj = gluNewQuadric();
 	gluQuadricDrawStyle(obj, style);
@@ -205,14 +214,14 @@ void cylinder(float bottom, float top, float height, int slice, int stack, GLenu
 	gluDeleteQuadric(obj);
 }
 
-void disk(float iner, float outer, int slice, int stack,  GLenum style) {
+void disk(float iner, float outer, int slice, int stack, GLenum style) {
 	obj = gluNewQuadric();
 	gluQuadricDrawStyle(obj, style);
 	gluDisk(obj, iner, outer, slice, stack);
 	gluDeleteQuadric(obj);
 }
 
-void drawSphereWithoutGLU(GLfloat radius = 0.35 ,int sliceNo = 30,int stackNo = 30)
+void drawSphereWithoutGLU(GLfloat radius = 0.35, int sliceNo = 30, int stackNo = 30)
 {
 	GLfloat x, y, z, sliceA, stackA;
 	
@@ -271,8 +280,187 @@ void body_upper() {
 		glPopMatrix();
 	}
 
-
 	glPopMatrix();// r90
+}
+
+
+
+//Soft variable for lower body - front plate
+
+float lowerBodyFrontUpperPlateX1 = 1.0, lowerBodyFrontUpperPlateX2 = 0.8,
+lowerBodyFrontUpperPlateY1 = 0.5, lowerBodyFrontUpperPlateY2 = 0.2,
+lowerBodyFrontUpperPlateZ = 0.1;
+
+float frontPlateFrontHexagon[6][3] = {
+	{-lowerBodyFrontUpperPlateX1, lowerBodyFrontUpperPlateY1, lowerBodyFrontUpperPlateZ},
+	{lowerBodyFrontUpperPlateX1, lowerBodyFrontUpperPlateY1, lowerBodyFrontUpperPlateZ},
+	{lowerBodyFrontUpperPlateX1, -lowerBodyFrontUpperPlateY2, lowerBodyFrontUpperPlateZ},
+	{lowerBodyFrontUpperPlateX2, -lowerBodyFrontUpperPlateY1, lowerBodyFrontUpperPlateZ},
+	{-lowerBodyFrontUpperPlateX2, -lowerBodyFrontUpperPlateY1, lowerBodyFrontUpperPlateZ},
+	{-lowerBodyFrontUpperPlateX1, -lowerBodyFrontUpperPlateY2, lowerBodyFrontUpperPlateZ}
+};
+
+float frontPlateBackHexagon[6][3] = {
+	{-lowerBodyFrontUpperPlateX1, lowerBodyFrontUpperPlateY1, -lowerBodyFrontUpperPlateZ},
+	{lowerBodyFrontUpperPlateX1, lowerBodyFrontUpperPlateY1, -lowerBodyFrontUpperPlateZ},
+	{lowerBodyFrontUpperPlateX1, -lowerBodyFrontUpperPlateY2, -lowerBodyFrontUpperPlateZ},
+	{lowerBodyFrontUpperPlateX2, -lowerBodyFrontUpperPlateY1, -lowerBodyFrontUpperPlateZ},
+	{-lowerBodyFrontUpperPlateX2, -lowerBodyFrontUpperPlateY1, -lowerBodyFrontUpperPlateZ},
+	{-lowerBodyFrontUpperPlateX1, -lowerBodyFrontUpperPlateY2, -lowerBodyFrontUpperPlateZ}
+};
+
+float lowerBodyFrontLowerPlateX1 = 0.8,
+lowerBodyFrontLowerPlateY1 = 1.0, lowerBodyFrontLowerPlateY2 = 0.2,
+lowerBodyFrontLowerPlateZ = 0.1;
+
+float frontPlateFrontPentagon[5][3] = {
+	{-lowerBodyFrontLowerPlateX1, lowerBodyFrontLowerPlateY1, lowerBodyFrontLowerPlateZ},
+	{lowerBodyFrontLowerPlateX1, lowerBodyFrontLowerPlateY1, lowerBodyFrontLowerPlateZ},
+	{lowerBodyFrontLowerPlateX1, -lowerBodyFrontLowerPlateY2, lowerBodyFrontLowerPlateZ},
+	{0, -lowerBodyFrontLowerPlateY1, lowerBodyFrontLowerPlateZ},
+	{-lowerBodyFrontLowerPlateX1, -lowerBodyFrontLowerPlateY2, lowerBodyFrontLowerPlateZ}
+};
+
+float frontPlateBackPentagon[5][3] = {
+	{-lowerBodyFrontLowerPlateX1, lowerBodyFrontLowerPlateY1, -lowerBodyFrontLowerPlateZ},
+	{lowerBodyFrontLowerPlateX1, lowerBodyFrontLowerPlateY1, -lowerBodyFrontLowerPlateZ},
+	{lowerBodyFrontLowerPlateX1, -lowerBodyFrontLowerPlateY2, -lowerBodyFrontLowerPlateZ},
+	{0, -lowerBodyFrontLowerPlateY1, -lowerBodyFrontLowerPlateZ},
+	{-lowerBodyFrontLowerPlateX1, -lowerBodyFrontLowerPlateY2, -lowerBodyFrontLowerPlateZ}
+};
+
+//Soft variable for lower body - back plate
+
+float lowerBodyBackUpperPlateX1 = 0.4, lowerBodyBackUpperPlateX2 = 0.2,
+lowerBodyBackUpperPlateY1 = 0.6, lowerBodyBackUpperPlateY2 = 0.0,
+lowerBodyBackUpperPlateZ = 0.1;
+
+float backPlateFrontHexagon[6][3] = {
+	{-lowerBodyBackUpperPlateX2, lowerBodyBackUpperPlateY1, lowerBodyBackUpperPlateZ},
+	{lowerBodyBackUpperPlateX2, lowerBodyBackUpperPlateY1, lowerBodyBackUpperPlateZ},
+	{lowerBodyBackUpperPlateX1, lowerBodyBackUpperPlateY2, lowerBodyBackUpperPlateZ},
+	{lowerBodyBackUpperPlateX1, -lowerBodyBackUpperPlateY1, lowerBodyBackUpperPlateZ},
+	{-lowerBodyBackUpperPlateX1, -lowerBodyBackUpperPlateY1, lowerBodyBackUpperPlateZ},
+	{-lowerBodyBackUpperPlateX1, lowerBodyBackUpperPlateY2, lowerBodyBackUpperPlateZ}
+};
+
+float backPlateBackHexagon[6][3] = {
+	{-lowerBodyBackUpperPlateX2, lowerBodyBackUpperPlateY1, -lowerBodyBackUpperPlateZ},
+	{lowerBodyBackUpperPlateX2, lowerBodyBackUpperPlateY1, -lowerBodyBackUpperPlateZ},
+	{lowerBodyBackUpperPlateX1, lowerBodyBackUpperPlateY2, -lowerBodyBackUpperPlateZ},
+	{lowerBodyBackUpperPlateX1, -lowerBodyBackUpperPlateY1, -lowerBodyBackUpperPlateZ},
+	{-lowerBodyBackUpperPlateX1, -lowerBodyBackUpperPlateY1, -lowerBodyBackUpperPlateZ},
+	{-lowerBodyBackUpperPlateX1, lowerBodyBackUpperPlateY2, -lowerBodyBackUpperPlateZ}
+};
+
+float lowerBodyBackLowerPlateX1 = 1.0, lowerBodyBackLowerPlateX2 = 0.8,
+lowerBodyBackLowerPlateY1 = 1.5, lowerBodyBackLowerPlateY2 = 0.2,
+lowerBodyBackLowerPlateZ = 0.1;
+
+float backPlateFrontPentagon[5][3] = {
+	{-lowerBodyBackLowerPlateX1, lowerBodyBackLowerPlateY1, lowerBodyBackLowerPlateZ},
+	{lowerBodyBackLowerPlateX1, lowerBodyBackLowerPlateY1, lowerBodyBackLowerPlateZ},
+	{lowerBodyBackLowerPlateX2, -lowerBodyBackLowerPlateY2, lowerBodyBackLowerPlateZ},
+	{0, -lowerBodyBackLowerPlateY1, lowerBodyBackLowerPlateZ},
+	{-lowerBodyBackLowerPlateX2, -lowerBodyBackLowerPlateY2, lowerBodyBackLowerPlateZ}
+};
+
+float backPlateBackPentagon[5][3] = {
+	{-lowerBodyBackLowerPlateX1, lowerBodyBackLowerPlateY1, -lowerBodyBackLowerPlateZ},
+	{lowerBodyBackLowerPlateX1, lowerBodyBackLowerPlateY1, -lowerBodyBackLowerPlateZ},
+	{lowerBodyBackLowerPlateX2, -lowerBodyBackLowerPlateY2, -lowerBodyBackLowerPlateZ},
+	{0, -lowerBodyBackLowerPlateY1, -lowerBodyBackLowerPlateZ},
+	{-lowerBodyBackLowerPlateX2, -lowerBodyBackLowerPlateY2, -lowerBodyBackLowerPlateZ}
+};
+
+void polygonPlate(int noOfSide, GLfloat frontPolygon[][3], GLfloat backPolygon[][3])
+{
+	glBegin(GL_POLYGON);
+	glColor3f(1.0f, 0.0f, 0.0f); // Red
+	for (int i = 0; i < noOfSide; ++i) {
+		glVertex3fv(frontPolygon[i]);
+	}
+	glEnd();
+
+	// Draw back face
+	glBegin(GL_POLYGON);
+	glColor3f(0.0f, 1.0f, 0.0f); // Green
+	for (int i = 0; i < noOfSide; ++i) {
+		glVertex3fv(backPolygon[i]);
+	}
+	glEnd();
+
+	// Draw sides
+	glBegin(GL_QUADS);
+	glColor3f(0.0f, 0.0f, 1.0f); // Blue
+	for (int i = 0; i < noOfSide; ++i) {
+		int next = (i + 1) % noOfSide; // Wrap around to the first vertex
+		glVertex3fv(frontPolygon[i]);
+		glVertex3fv(backPolygon[i]);
+		glVertex3fv(backPolygon[next]);
+		glVertex3fv(frontPolygon[next]);
+	}
+	glEnd();
+}
+
+void lowerBody()
+{
+	//Lower body - Front plate 
+	glPushMatrix();
+
+		//Translation to front and up
+		glTranslatef(0, 0.5, 1.5);
+
+		//Upper plate - polygon
+		polygonPlate(6, frontPlateFrontHexagon, frontPlateBackHexagon);
+
+		//Lower plate - polygon
+		glTranslatef(0, -1.5, 0);
+		polygonPlate(5, frontPlateFrontPentagon, frontPlateBackPentagon);
+
+	glPopMatrix();
+
+	//Lower body - Middle part
+	glPushMatrix();
+
+		//Cuboid
+		glTranslatef(-0.5, -0.5, -1);
+		rect(1, 1, 2.5, style_gl);
+
+	glPopMatrix();
+
+	//Lower body - Back plate
+	glPushMatrix();
+
+	//Translation to back
+	glTranslatef(0, 0, -1);
+
+		glPushMatrix();
+
+			//Translation to up for upper plates
+			glTranslatef(0, 1.3, 0);
+
+			//Left upper plate - polygon
+			glPushMatrix();
+			glTranslatef(-0.6, 0, 0);
+			polygonPlate(6, backPlateFrontHexagon, backPlateBackHexagon);
+			glPopMatrix();
+
+			//Right upper plate - polygon
+			glPushMatrix();
+			glTranslatef(0.6, 0, 0);
+			polygonPlate(6, backPlateFrontHexagon, backPlateBackHexagon);
+			glPopMatrix();
+
+		glPopMatrix();
+
+		//Lower plate - polygon
+		glPushMatrix();
+		glTranslatef(0, -0.8, 0);
+		polygonPlate(5, backPlateFrontPentagon, backPlateBackPentagon);
+		glPopMatrix();
+
+	glPopMatrix();
 }
 
 void display()
@@ -286,6 +474,9 @@ void display()
 	camera();
 
 	body_upper();
+
+	//lowerBody();
+
 
 	glPopMatrix();//camera
 }
@@ -305,7 +496,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int nCmdShow)
 	if (!RegisterClassEx(&wc)) return false;
 
 	HWND hWnd = CreateWindow(WINDOW_TITLE, WINDOW_TITLE, WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, CW_USEDEFAULT, 800, 600,
+		CW_USEDEFAULT, CW_USEDEFAULT, windowWidth, windowHeight,
 		NULL, NULL, wc.hInstance, NULL);
 
 	//--------------------------------
@@ -325,7 +516,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int nCmdShow)
 	glEnable(GL_DEPTH_TEST);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(60, 800/600, 0.0001, 9999);
+	gluPerspective(60, windowWidth / windowHeight, 0.0001, 9999);
 	//--------------------------------
 	//	End initialization
 	//--------------------------------
