@@ -226,22 +226,22 @@ void disk(float iner, float outer, int slice, int stack,  GLenum style) {
 	gluDeleteQuadric(obj);
 }
 
-void drawSphereWithoutGLU(GLfloat radius = 0.35 ,int sliceNo = 30,int stackNo = 30)
+void drawSphereWithoutGLU(GLfloat radius = 0.35 ,int sliceNo = 30,int stackNo = 30,float sliceA=0,float stackA=0)
 {
-	GLfloat x, y, z, sliceA, stackA;
+	GLfloat x, y, z, slice, stack;
 	
-	for (sliceA = 0.0; sliceA < 2 * PI; sliceA += PI / sliceNo)
+	for (slice = sliceA; slice < 2 * PI; slice += PI / sliceNo)
 	{
-		glBegin(GL_LINE_LOOP);
-		for (stackA = 0.0; stackA < PI; stackA += PI / stackNo)
+		glBegin(style_gl);
+		for (stack = stackA; stack < 2 * PI; stack += PI / stackNo)
 		{
-			x = radius * cos(stackA) * sin(sliceA);
-			y = radius * sin(stackA) * sin(sliceA);
-			z = radius * cos(sliceA);
+			x = radius * cos(stack) * sin(slice);
+			y = radius * sin(stack) * sin(slice);
+			z = radius * cos(slice);
 			glVertex3f(x, y, z);
-			x = radius * cos(stackA) * sin(sliceA + PI / stackNo);
-			y = radius * sin(stackA) * sin(sliceA + PI / sliceNo);
-			z = radius * cos(sliceA + PI / sliceNo);
+			x = radius * cos(stack) * sin(slice + PI / stackNo);
+			y = radius * sin(stack) * sin(slice + PI / sliceNo);
+			z = radius * cos(slice + PI / sliceNo);
 			glVertex3f(x, y, z);
 		}
 		glEnd();
@@ -271,17 +271,15 @@ void camera() {
 
 void cheast_frame1() {
 
-	glBegin(style_gl);//1
+	glBegin(style_gl);//frame1
 	glColor3f(1,0,0);
 	glVertex3f(0, 0, 0);
 	glVertex3f(0,2,0.5);
 	glVertex3f(-1.6, 3.3, -1.2);
-	glVertex3f(-1.6, 2.1, -1);
+	glVertex3f(-1.6, 1.8, -1);
 	glEnd();
 
-
-
-	glBegin(style_gl);//4
+	glBegin(style_gl);//top
 	glColor3f(0, 1, 0);
 	glVertex3f(0, 2, 0.5);
 	glVertex3f(-1.6, 3.3, -1.2);
@@ -289,7 +287,29 @@ void cheast_frame1() {
 	glVertex3f(0, 2.2, 0.4);
 	glEnd();
 
+	glBegin(style_gl);//top2
+	glColor3f(1, 1, 0);
+	glVertex3f(-1.5, 3.4, -1.25);
+	glVertex3f(0, 2.2, 0.4);
+	glVertex3f(0, 2.1, -0.13);
+	glVertex3f(-1.5, 3.4, -1.5);
+	glEnd();
 
+	glBegin(style_gl);//bottom
+	glColor3f(0, 0, 1);
+	glVertex3f(0, 0, 0);
+	glVertex3f(-1.6, 1.8, -1);
+	glVertex3f(-1.6, 1.74, -1.1);
+	glVertex3f(0, -0.04, -0.1);
+	glEnd();
+
+	glBegin(style_gl);//back
+	glColor3f(1, 0, 1);
+	glVertex3f(0, 2.1, -0.13);
+	glVertex3f(-1.5, 3.4, -1.5);
+	glVertex3f(-1.6, 1.74, -1.1);
+	glVertex3f(0, -0.04, -0.1);
+	glEnd();
 }
 
 void cheast_frame2() {
@@ -400,12 +420,74 @@ void cheast_frame2() {
 	glVertex3f(1.1, 0.6, -1.8);
 	glVertex3f(0.62, 0.55, -2.9);
 	glEnd();
+
+	glBegin(style_gl);
+	glColor3f(1, 0, 0);
+	glVertex3f(0.62, 0.55, -2.9);
+	glVertex3f(0.58, 0.0, -2.9);
+	glVertex3f(1.2, -0.25, -1.4);
+	glVertex3f(1.1, 0.6, -1.8);
+	glEnd();
+
+	glBegin(style_gl);
+	glColor3f(0, 0, 1);
+	glVertex3f(0.7, 1.7, -2.9);
+	glVertex3f(0.58, 0.0, -2.9);
+	glVertex3f(-0.85, 0.3, -2.2);
+	glVertex3f(-1.06, 1.4, -2.05);
+	glVertex3f(-0.3, 1.6, -2.5);
+	glEnd();
+
+	glBegin(style_gl);
+	glColor3f(1, 0, 1);
+	glVertex3f(0.58, 0.0, -2.9);
+	glVertex3f(-0.85, 0.3, -2.2);
+	glVertex3f(-0.3, -0.2, -1);
+	glVertex3f(1.2, -0.25, -1.4);
+	glEnd();
+}
+
+void cheast_middle() {
+	glPushMatrix();
+	glColor3f(1,0,0);
+	glRotatef(180, 0, 0, 1);
+	drawSphereWithoutGLU(1, 20, 20, 3.14, 3.14);
+	glPushMatrix();
+	glRotatef(90,0,1,0);
+	drawSphereWithoutGLU(1, 20, 20, 3.14, 3.14);
+	glPopMatrix();
+	glPopMatrix();
+
+	glPushMatrix();
+	glRotatef(90, 1, 0, 0);
+	disk(0,1,20,20,style_glu);
+	glPopMatrix();
+
+	glPushMatrix();
+	glColor3f(0, 1, 0);
+	glTranslatef(0, 0, -0.35);
+	sphere(0.5,20,20,style_glu);
+	glPopMatrix();
+}
+
+void cheast() {
+	glPushMatrix();
+	glTranslatef(0, -0.5, 1.5);
+	glPushMatrix();
+	glTranslatef(-3, 1.75, -1.8);
+	glRotatef(-20, 0, 0, 1);
+	glRotatef(-35, 0, 1, 0);
+	glRotatef(20, 1, 0, 0);
+	cheast_frame2();
+	glPopMatrix();
+	cheast_frame1();
+	glPopMatrix();
 }
 
 void body_upper() {
 	glPushMatrix();
 	glTranslatef(0, -2, 0);
-	//glRotatef(-90, 1, 0, 0);
+	glRotatef(-90, 1, 0, 0);
 
 	glPushMatrix();
 	glColor3f(0, 0, 0);
@@ -447,12 +529,14 @@ void display()
 	glPushMatrix();
 	camera();
 
-	//body_upper();
-	cheast_frame2();
-	//glPushMatrix();
-	//glScalef(-1, 1, 1);
-	//cheast_frame2();
-	//glPopMatrix();
+	/*body_upper();
+	cheast();
+	glPushMatrix();
+	glScalef(-1, 1, 1);
+	cheast();
+	glPopMatrix();*/
+	cheast_middle();
+	
 
 	glPopMatrix();//camera
 }
