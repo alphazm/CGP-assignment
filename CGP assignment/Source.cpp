@@ -60,6 +60,14 @@ int style_switch;
 float tx, ty, tz,angle;
 float Oner=-10, Ofar=10, Pner=0.1, Pfar=100;
 bool ortho=false;
+
+float ambL[] = { 1.0, 0.0,0.0 };
+float difL[] = { 0.0, 1.0, 0.0 };
+float posA[] = { 0,1,0 };
+float posB[] = { 0.8,0,0 };
+float ambM[] = { 1,0,0 };
+float difM[] = { 0,1,0 };
+
 GLUquadricObj* obj = NULL;
 LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -372,6 +380,40 @@ void cheast_frame2() {
 	glVertex3f(-0.4, 1.7, 0);
 	glEnd();
 
+	//small pice
+	glBegin(style_gl);
+	glColor3f(1, 1, 0);
+	glVertex3f(0.2, -0.2, -0.4);
+	glVertex3f(1.48, -0.2, -0.4);
+	glVertex3f(1.2, -0.4, -1.4);
+	glVertex3f(-0.1, -0.4, -1.05);
+	glEnd();
+	glBegin(style_gl);
+	glColor3f(1,0,0);
+	glVertex3f(0.2, -0.2, -0.4);
+	glVertex3f(1.48, -0.2, -0.4);
+	glVertex3f(1.48, 0, -0.4);
+	glVertex3f(0.2, 0, -0.4);
+	glEnd();
+	glBegin(style_gl);
+	glVertex3f(1.48, -0.2, -0.4);
+	glVertex3f(1.2, -0.4, -1.4);
+	glVertex3f(1.2, 0, -1.4);
+	glVertex3f(1.48, 0, -0.4);
+	glEnd();
+	glBegin(style_gl);
+	glVertex3f(1.2, -0.4, -1.4);
+	glVertex3f(-0.1, -0.4, -1.05);
+	glVertex3f(-0.1, 0, -1.05);
+	glVertex3f(1.2, 0, -1.4);
+	glEnd();
+	glBegin(style_gl);
+	glVertex3f(0.2, -0.2, -0.4);
+	glVertex3f(-0.1, -0.4, -1.05);
+	glVertex3f(-0.1, 0, -1.05);
+	glVertex3f(0.2, 0, -0.4);
+	glEnd();
+
 	//back
 	glBegin(style_gl);
 	glColor3f(1, 0, 0);
@@ -445,9 +487,92 @@ void cheast_frame2() {
 	glVertex3f(-0.3, -0.2, -1);
 	glVertex3f(1.2, -0.25, -1.4);
 	glEnd();
+
+	//small pice
+	glBegin(style_gl);
+	glColor3f(1, 0, 1);
+	glVertex3f(1.2, -0.4, -1.4);
+	glVertex3f(-0.1, -0.4, -1.05);
+	glVertex3f(-0.45, -0.1, -2.1);
+	glVertex3f(0.68, -0.2, -2.6);
+	glEnd();
+	glBegin(style_gl);
+	glColor3f(0, 0, 1);
+	glVertex3f(1.2, -0.4, -1.4);
+	glVertex3f(-0.1, -0.4, -1.05);
+	glVertex3f(-0.1, 0, -1.05);
+	glVertex3f(1.2, 0, -1.4);
+	glEnd();
+	glBegin(style_gl);
+	glVertex3f(-0.1, -0.4, -1.05);
+	glVertex3f(-0.45, -0.1, -2.1);
+	glVertex3f(-0.45, 0.5, -2.1);
+	glVertex3f(-0.1, 0, -1.05);
+	glEnd();
+	glBegin(style_gl);
+	glVertex3f(-0.45, -0.1, -2.1);
+	glVertex3f(0.68, -0.2, -2.6);
+	glVertex3f(0.68, 0, -2.6);
+	glVertex3f(-0.45, 0.5, -2.1);
+	glEnd();
+	glBegin(style_gl);
+	glVertex3f(1.2, -0.4, -1.4);
+	glVertex3f(0.68, -0.2, -2.6);
+	glVertex3f(0.68, 0, -2.6);
+	glVertex3f(1.2, 0, -1.4);
+	glEnd();
+}
+
+void cheast_middle_detail() {
+	glPushMatrix();
+	glScalef(0.5,0.5,0.5);
+	glRotatef(180, 0, 1, 0);
+	glPushMatrix();
+	glColor3f(0,1,0);
+	glTranslatef(-1.5, 0.1, 1);
+	glRotatef(10,1,0.5,0);
+	cylinder(0.2,0.2,0.3,10,10,style_glu);
+	glPushMatrix();
+	glTranslatef(0,0,0.3);
+	cylinder(0.2, 0, 0.02, 10, 10, style_glu);
+	glPopMatrix();
+	glPushMatrix();
+	glColor3f(0,0,1);
+	glTranslatef(0, 0, -0.05);
+	cylinder(0.25, 0.25, 0.05, 10, 10, style_glu);
+	disk(0,0.25,10,10,style_glu);
+	glPushMatrix();
+	glTranslatef(0,0,0.05);
+	disk(0, 0.25, 10, 10, style_glu);
+	glPopMatrix();
+	glPopMatrix();
+	glColor3f(1, 1, 0);
+	glPushMatrix();
+	glTranslatef(0,-0.07,-0.6);
+	glRotatef(-7, 1, 0, 0);
+	cylinder(0.15, 0.15, 0.6, 10, 10, style_glu);
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(0, 0.135, -1.32);
+	glRotatef(15, 1, 0, 0);
+	cylinder(0.15, 0.15, 0.8, 10, 10, style_glu);
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(0, -0.08, -2.02);
+	glRotatef(-15, 1, 0, 0);
+	cylinder(0.15, 0.15, 0.8, 10, 10, style_glu);
+	glPopMatrix();
+	glTranslatef(0, -0.66, -3.);
+	glRotatef(-30, 1, 0, 0);
+	cylinder(0.15, 0.15, 1.2, 10, 10, style_glu);
+	glPopMatrix();
+	glPopMatrix();
 }
 
 void cheast_middle() {
+	glPushMatrix();
+	glScalef(1.6,1.6,1.6);
+
 	glPushMatrix();
 	glColor3f(1,0,0);
 	glRotatef(180, 0, 0, 1);
@@ -455,6 +580,14 @@ void cheast_middle() {
 	glPushMatrix();
 	glRotatef(90,0,1,0);
 	drawSphereWithoutGLU(1, 20, 20, 3.14, 3.14);
+	glPushMatrix();
+	glRotatef(90, 0, 1, 0);
+	drawSphereWithoutGLU(1, 20, 20, 3.14, 3.14);
+	glPushMatrix();
+	glRotatef(90, 0, 1, 0);
+	drawSphereWithoutGLU(1, 20, 20, 3.14, 3.14);
+	glPopMatrix();
+	glPopMatrix();
 	glPopMatrix();
 	glPopMatrix();
 
@@ -465,14 +598,71 @@ void cheast_middle() {
 
 	glPushMatrix();
 	glColor3f(0, 1, 0);
-	glTranslatef(0, 0, -0.35);
-	sphere(0.5,20,20,style_glu);
+	glTranslatef(0, 0, -0.5);
+	sphere(0.4,20,20,style_glu);
+	glPopMatrix();
+
+	glPushMatrix();
+	glColor3f(0,0,1);
+	glTranslatef(0,0,-0.4);
+	glBegin(style_gl);
+	glVertex3f(-0.25, 0.05, -0.8);
+	glVertex3f(-0.25, 0.05, 0);
+	glVertex3f(-0.25, -1.3,0 );
+	glEnd();
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(0, 0, -0.4);
+	glBegin(style_gl);
+	glVertex3f(0.25, 0.05, -0.8);
+	glVertex3f(0.25, 0.05, 0);
+	glVertex3f(0.25, -1.3, 0);
+	glEnd();
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(0, 0, -0.4);
+	glBegin(style_gl);
+	glVertex3f(-0.25, 0.05, -0.8);
+	glVertex3f(0.25, 0.05, -0.8);
+	glVertex3f(0.25, 0.05, 0);
+	glVertex3f(-0.25, 0.05, 0);
+	glEnd();
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(0, 0, -0.4);
+	glBegin(style_gl);
+	glVertex3f(-0.25, 0.05, -0.8);
+	glVertex3f(0.25, 0.05, -0.8);
+	glVertex3f(0.25, -1.3, 0);
+	glVertex3f(-0.25, -1.3, 0);
+	glEnd();
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(0, 0, -0.4);
+	glBegin(style_gl);
+	glVertex3f(-0.25, 0.05, 0);
+	glVertex3f(-0.25, -1.3, 0);
+	glVertex3f(0.25, -1.3, 0);
+	glVertex3f(0.25, 0.05, 0);
+	glEnd();
+	glPopMatrix();
+	glPopMatrix();
+
+	cheast_middle_detail();
+
+	glPushMatrix();
+	glScalef(-1, 1, 1);
+	cheast_middle_detail();
 	glPopMatrix();
 }
 
 void cheast() {
 	glPushMatrix();
-	glTranslatef(0, -0.5, 1.5);
+	glTranslatef(0, 0.5, 1.65);
 	glPushMatrix();
 	glTranslatef(-3, 1.75, -1.8);
 	glRotatef(-20, 0, 0, 1);
@@ -491,25 +681,31 @@ void body_upper() {
 
 	glPushMatrix();
 	glColor3f(0, 0, 0);
-	cylinder(1, 1, 3, 20, 20, style_glu);
+	cylinder(1.2, 1.2, 4, 20, 20, style_glu);
 	glPopMatrix();
 
 	glPushMatrix();
 	glColor3f(0, 0, 0);
-	glTranslatef(0, 0, 1);
-	cylinder(0.7, 1.2, 2, 20, 20, style_glu);
+	glTranslatef(0, 0, 2);
+	cylinder(0.9, 1.3, 2, 20, 20, style_glu);
 	glPopMatrix();
 
 	glPushMatrix();
 	glColor3f(0, 0, 0);
-	cylinder(1.2, 0.7, 2, 20, 20, style_glu);
+	cylinder(1.3, 0.9, 2, 20, 20, style_glu);
+	glPopMatrix();
+
+	glPushMatrix();
+	glColor3f(0, 1, 0);
+	glTranslatef(0, 0, 4);
+	cylinder(1.3, 1, 1.3, 20, 20, style_glu);
 	glPopMatrix();
 
 	for (int i = 0; i < 15; i++) {
 		glPushMatrix();
 		glRotatef(((360 / 15) * i), 0, 0, 1);
-		glColor3f(0, 0, 0);
-		rect(1.18, 0.2, 3, style_gl);
+		glColor3f(0.8, 0.8, 0.8);
+		rect(1.2, 0.2, 4, style_gl);
 		glPopMatrix();
 	}
 
@@ -517,26 +713,45 @@ void body_upper() {
 	glPopMatrix();// r90
 }
 
+void light() {
+	//glEnable(GL_LIGHTING);
+
+	glLightfv(GL_LIGHT0, GL_AMBIENT, ambL);
+	glLightfv(GL_LIGHT0, GL_POSITION, posA);
+	glEnable(GL_LIGHT0);
+
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, difL);
+	glLightfv(GL_LIGHT1, GL_POSITION, posB);
+	glEnable(GL_LIGHT1);
+}
+
 void display()
 {
 	glClearColor(0.498, 0.498, 0.498, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	projection();
-
+	light();
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
 	glPushMatrix();
 	camera();
 
-	/*body_upper();
-	cheast();
-	glPushMatrix();
-	glScalef(-1, 1, 1);
-	cheast();
-	glPopMatrix();*/
-	cheast_middle();
+	//body_upper();
+	//cheast();
+
+	//glPushMatrix();
+	//glScalef(-1, 1, 1);
+	//cheast();
+	//glPopMatrix();
+
+	//glPushMatrix();
+	//glRotatef(180, 0, 1, 0);
+	//glTranslatef(0,4.5,0);
+	//cheast_middle();
+	//glPopMatrix();
 	
+	cheast_frame2();
 
 	glPopMatrix();//camera
 }
