@@ -8,7 +8,7 @@
 #pragma comment (lib, "GLU32.lib")
 
 #define WINDOW_TITLE "OpenGL Window"
-const float PI = 3.141592f, speed = 0.05;
+const float PI = 3.141592f, speed = 0.1;
 
 //---------------------------------------------------------------
 struct Vec3 {
@@ -49,10 +49,10 @@ struct Vec3 {
 		return a.x * b.x + a.y * b.y + a.z * b.z;
 	}
 };
-Vec3 cameraPosition = { 0.0f, 0.0f, 10.0f }; // Camera starting position
+Vec3 cameraPosition = { 0.0f, 0.0f, 20.0f }; // Camera starting position
 Vec3 target = { 0.0f, 0.0f, 0.0f };         // Point the camera looks at
 Vec3 upVector = { 0.0f, 1.0f, 0.0f };       // Up direction
-float radius = 10.0f;              // Distance from camera to target
+float radius = 20.0f;              // Distance from camera to target
 float yaw = 0.0f;                 // Horizontal angle (in radians)
 float pitch = 0.0f;               // Vertical angle (in radians)
 GLenum style_glu= GLU_LINE,style_gl=GL_LINE_LOOP;
@@ -67,6 +67,14 @@ float posA[] = { 0,1,0 };
 float posB[] = { 0.8,0,0 };
 float ambM[] = { 1,0,0 };
 float difM[] = { 0,1,0 };
+
+float finger_max_angle = 45;
+float finger_min_angle = 0;
+float finger_current_angle = finger_min_angle;
+float hand_max_angle = 90;
+float hand_min_angle = 0;
+float hand_current_angle = hand_min_angle;
+
 
 GLUquadricObj* obj = NULL;
 LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
@@ -111,7 +119,15 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 		if (wParam == 'A') { tx -= speed; }
 		if (wParam == 'S') { ty -= speed; }
 		if (wParam == 'D') { tx += speed; }
-
+		if (wParam == 'B') {
+			if (finger_current_angle < finger_max_angle)
+				finger_current_angle += speed;
+			 
+		}
+		if (wParam == 'N') {
+			if (finger_current_angle > finger_min_angle)
+				finger_current_angle -= speed;
+		}
 		if (wParam == VK_ESCAPE) PostQuitMessage(0);
 		if (wParam == VK_UP) { pitch += speed; }
 		if (wParam == VK_DOWN) { pitch -= speed; }
@@ -120,7 +136,7 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 		if (wParam == VK_OEM_PLUS) { radius -= 0.1f; }
 		if (wParam == VK_OEM_MINUS) { radius += 0.1f; }
 		if (wParam == VK_SPACE) {
-			radius = 10.0f;              
+			radius = 20.0f;              
 			yaw = 0.0f;                 
 			pitch = 0.0f;
 			ty = tx = tx = angle = 0;
@@ -267,6 +283,18 @@ void projection() {
 		glOrtho(-10, 10, -10, 10, Oner, Ofar);
 	}
 
+}
+
+void light() {
+	//glEnable(GL_LIGHTING);
+
+	glLightfv(GL_LIGHT0, GL_AMBIENT, ambL);
+	glLightfv(GL_LIGHT0, GL_POSITION, posA);
+	glEnable(GL_LIGHT0);
+
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, difL);
+	glLightfv(GL_LIGHT1, GL_POSITION, posB);
+	glEnable(GL_LIGHT1);
 }
 
 void camera() {
@@ -521,6 +549,116 @@ void cheast_frame2() {
 	glVertex3f(0.68, 0, -2.6);
 	glVertex3f(1.2, 0, -1.4);
 	glEnd();
+
+	//yiling
+	//font
+	glBegin(style_gl);//left
+	glColor3f(1,1,0);
+	glVertex3f(-0.5, 2.4, -1.305);
+	glVertex3f(-0.2, 3.4, -1.305);
+	glVertex3f(0.5, 3, -0.305);
+	glVertex3f(0.1, 2.4, -0.305);
+	glEnd();
+
+	glBegin(style_gl);//top
+	glColor3f(1, 0, 0);
+	glVertex3f(-0.1, 3.35, -1.32);
+	glVertex3f(-0.2, 3.4, -1.305);
+	glVertex3f(0.5, 3, -0.305);
+	glVertex3f(0.6, 2.95, -0.32);
+	glEnd();
+
+	glBegin(style_gl);//right
+	glColor3f(1, 1, 0);
+	glVertex3f(-0.1, 3.35, -1.32);
+	glVertex3f(0.6, 2.95, -0.32);
+	glVertex3f(1.3, 2, -0.3);
+	glVertex3f(0.6, 2, -1.65);
+	glEnd();
+
+	glBegin(style_gl);//back
+	glColor3f(1,0, 1 );
+	glVertex3f(-0.5, 2.4, -1.305);
+	glVertex3f(-0.2, 3.4, -1.305);
+	glVertex3f(-0.1, 3.35, -1.32);
+	glVertex3f(0.6, 2, -1.65);
+	glEnd();
+
+	glBegin(style_gl);//front
+	glColor3f(1, 0, 1);
+	glVertex3f(0.5, 3, -0.305);
+	glVertex3f(0.1, 2.4, -0.305);
+	glVertex3f(1.3, 2, -0.3);
+	glVertex3f(0.6, 2.95, -0.32);
+	glEnd();
+
+	//back
+	glBegin(style_gl);//left 
+	glColor3f(1, 1,0 );
+	glVertex3f(-0.5, 2.4, -1.305);
+	glVertex3f(-0.2, 3.4, -1.305);
+	glVertex3f(-0.4, 3.1, -2);
+	glVertex3f(-0.7, 2.3, -1.9);
+	glEnd();
+	
+	glBegin(style_gl);//top 
+	glColor3f(1, 0, 0);
+	glVertex3f(-0.2, 3.4, -1.305);
+	glVertex3f(-0.1, 3.35, -1.32);
+	glVertex3f(-0.3, 3.1, -2);
+	glVertex3f(-0.4, 3.1, -2);
+	glEnd();
+
+	glBegin(style_gl);//right 
+	glColor3f(1, 1, 0);
+	glVertex3f(-0.1, 3.35, -1.32);
+	glVertex3f(0.6, 2, -1.65);
+	glVertex3f(0.4, 2, -2.2);
+	glVertex3f(-0.3, 3.1, -2);
+	glEnd();
+
+	glBegin(style_gl);//back 
+	glColor3f(1, 0, 1);
+	glVertex3f(0.4, 2, -2.2);
+	glVertex3f(-0.7, 2.3, -1.9);
+	glVertex3f(-0.4, 3.1, -2);
+	glVertex3f(-0.3, 3.1, -2);
+	glEnd();
+
+	//back2
+	glBegin(style_gl);//back 
+	glColor3f(1, 1, 0);
+	glVertex3f(-0.7, 2.3, -1.9);
+	glVertex3f(0.7, 1.7, -2.9);
+	glVertex3f(0.6, 2.6, -2.6);
+	glVertex3f(-0.4, 3.1, -2);
+	glEnd();
+
+	glBegin(style_gl);//top 
+	glColor3f(1, 0, 0);
+	glVertex3f(-0.3, 3.1, -2);
+	glVertex3f(-0.4, 3.1, -2);
+	glVertex3f(0.6, 2.6, -2.6);
+	glVertex3f(0.7, 2.6, -2.5);
+	glEnd();
+
+	glBegin(style_gl);//front  
+	glColor3f(1, 1, 0);
+	glVertex3f(-0.3, 3.1, -2);
+	glVertex3f(0.4, 2, -2.2);
+	glVertex3f(0.85, 1.8, -2.2);
+	glVertex3f(0.7, 2.6, -2.5);
+	glEnd();
+
+	glBegin(style_gl);//left  
+	glColor3f(1, 0, 1);
+	glVertex3f(0.85, 1.8, -2.2);
+	glVertex3f(0.7, 2.6, -2.5);
+	glVertex3f(0.6, 2.6, -2.6);
+	glVertex3f(0.7, 1.7, -2.9);
+	
+	glEnd();
+	
 }
 
 void cheast_middle_detail() {
@@ -602,56 +740,59 @@ void cheast_middle() {
 	sphere(0.4,20,20,style_glu);
 	glPopMatrix();
 
+	// the triangle
 	glPushMatrix();
 	glColor3f(0,0,1);
 	glTranslatef(0,0,-0.4);
 	glBegin(style_gl);
-	glVertex3f(-0.25, 0.05, -0.8);
-	glVertex3f(-0.25, 0.05, 0);
-	glVertex3f(-0.25, -1.3,0 );
+	glVertex3f(0, 0.05, -1);
+	glVertex3f(0, 0.05, 0);
+	glVertex3f(0, -1.3,0 );
 	glEnd();
-	glPopMatrix();
 
-	glPushMatrix();
-	glTranslatef(0, 0, -0.4);
-	glBegin(style_gl);
-	glVertex3f(0.25, 0.05, -0.8);
-	glVertex3f(0.25, 0.05, 0);
-	glVertex3f(0.25, -1.3, 0);
+	glBegin(style_gl);//right front
+	glVertex3f(0, 0.05, -1);
+	glVertex3f(0, -1.3, 0);
+	glVertex3f(-0.2, -1.3, 0.1);
+	glVertex3f(-0.2, 0.05, -0.8);
 	glEnd();
-	glPopMatrix();
 
-	glPushMatrix();
-	glTranslatef(0, 0, -0.4);
-	glBegin(style_gl);
-	glVertex3f(-0.25, 0.05, -0.8);
-	glVertex3f(0.25, 0.05, -0.8);
-	glVertex3f(0.25, 0.05, 0);
-	glVertex3f(-0.25, 0.05, 0);
+	glBegin(style_gl);//left front
+	glVertex3f(0, 0.05, -1);
+	glVertex3f(0, -1.3, 0);
+	glVertex3f(0.2, -1.3, 0.1);
+	glVertex3f(0.2, 0.05, -0.8);
 	glEnd();
-	glPopMatrix();
 
-	glPushMatrix();
-	glTranslatef(0, 0, -0.4);
-	glBegin(style_gl);
-	glVertex3f(-0.25, 0.05, -0.8);
-	glVertex3f(0.25, 0.05, -0.8);
-	glVertex3f(0.25, -1.3, 0);
-	glVertex3f(-0.25, -1.3, 0);
+	glBegin(style_gl);//right top
+	glVertex3f(0, 0.05, 0);
+	glVertex3f(-0.2, 0.05, 0);
+	glVertex3f(-0.2, 0.05, -0.8);
+	glVertex3f(0, 0.05, -1);
 	glEnd();
-	glPopMatrix();
 
-	glPushMatrix();
-	glTranslatef(0, 0, -0.4);
-	glBegin(style_gl);
-	glVertex3f(-0.25, 0.05, 0);
-	glVertex3f(-0.25, -1.3, 0);
-	glVertex3f(0.25, -1.3, 0);
-	glVertex3f(0.25, 0.05, 0);
+	glBegin(style_gl);//left top
+	glVertex3f(0, 0.05, 0);
+	glVertex3f(0.2, 0.05, 0);
+	glVertex3f(0.2, 0.05, -0.8);
+	glVertex3f(0, 0.05, -1);
 	glEnd();
-	glPopMatrix();
-	glPopMatrix();
 
+	glBegin(style_gl);//right 
+	glVertex3f(-0.2, 0.05, -0.8);
+	glVertex3f(-0.2, 0.05, 0);
+	glVertex3f(-0.2, -1.3, 0.1);
+	glEnd();
+	glBegin(style_gl);//left 
+	glVertex3f(0.2, 0.05, -0.8);
+	glVertex3f(0.2, 0.05, 0);
+	glVertex3f(0.2, -1.3, 0.1);
+	glEnd();
+
+	glPopMatrix();//move the trin back 
+
+	glPopMatrix();//last pop
+	
 	cheast_middle_detail();
 
 	glPushMatrix();
@@ -713,16 +854,575 @@ void body_upper() {
 	glPopMatrix();// r90
 }
 
-void light() {
-	//glEnable(GL_LIGHTING);
+void body_back() {
+	glPushMatrix();
+	glRotatef(20, 0, 1, 0);
+	glColor3f(1, 1, 1);
+	rect(0.8,1.8,0.2,style_gl);
+	glPopMatrix();
+	
+	glPushMatrix();
+	glTranslatef(0.3,0.4,-0.28);
+	glColor3f(1,0,0);
+	//pice1
+	glBegin(style_gl);//back
+	glVertex3f(-0.1, 0.2, 0);
+	glVertex3f(0, 1.5, 0);
+	glVertex3f(0.5, 1.5, 0);
+	glVertex3f(0.5, 0.2, 0);
+	glEnd();
+	glColor3f(1, 1, 0);
+	glBegin(style_gl);//back2
+	glVertex3f(-0.1, 0.2, 0);
+	glVertex3f(-0.1, 0, 0);
+	glVertex3f(0.5, 0, 0);
+	glVertex3f(0.5, 0.2, 0);
+	glEnd();
+	glColor3f(0, 1, 0);
+	glBegin(style_gl);//top
+	glVertex3f(0, 1.5, 0);
+	glVertex3f(0.5, 1.5, 0);
+	glVertex3f(0.5, 1.55, -0.3);
+	glVertex3f(0, 1.55, -0.3);
+	glEnd();
+	glColor3f(0, 0, 1);
+	glBegin(style_gl);//front
+	glVertex3f(0, 0.2, -0.6);
+	glVertex3f(0.5, 0.2, -0.6);
+	glVertex3f(0.5, 1.55, -0.3);
+	glVertex3f(0, 1.55, -0.3);
+	glEnd();
+	glBegin(style_gl);//front2
+	glColor3f(0, 1, 0);
+	glVertex3f(0, 0.2, -0.6);
+	glVertex3f(0.5, 0.2, -0.6);
+	glVertex3f(0.5, 0, -0.6);
+	glVertex3f(0, 0, -0.6);
+	glEnd();
+	glBegin(style_gl);//left
+	glColor3f(0, 1, 1);
+	glVertex3f(0.5, 1.5, 0);
+	glVertex3f(0.5, 0, 0);
+	glVertex3f(0.5, 0, -0.6);
+	glVertex3f(0.5, 0.2, -0.6);
+	glVertex3f(0.5, 1.55, -0.3);
+	glEnd();
+	glBegin(style_gl);//right
+	glColor3f(0, 1, 1);
+	glVertex3f(0, 1.5, 0);
+	glVertex3f(-0.1, 0.2, 0);
+	glVertex3f(0, 0.2, -0.6);
+	glVertex3f(0, 1.55, -0.3);
+	glEnd();
+	glColor3f(0, 0, 1);//right2
+	glBegin(style_gl);
+	glVertex3f(-0.1, 0, 0);
+	glVertex3f(0, 0, -0.6);
+	glVertex3f(0, 0.2, -0.6);
+	glVertex3f(-0.1, 0.2, 0);
+	glEnd();
+	glColor3f(1, 0, 1);//bottom
+	glBegin(style_gl);
+	glVertex3f(-0.1, 0, 0);
+	glVertex3f(0, 0, -0.6);
+	glVertex3f(0.5, 0, -0.6);
+	glVertex3f(0.5, 0, 0);
+	glEnd();
+	//pice2
+	glColor3f(1, 0, 0);//left
+	glBegin(style_gl);
+	glVertex3f(0.5, 0, -0.6);
+	glVertex3f(0.5, 0, 0);
+	glVertex3f(0.5, -1, 0);
+	glVertex3f(0.5, -1, -0.3);
+	glEnd();
+	glColor3f(1, 0, 0);//right
+	glBegin(style_gl);
+	glVertex3f(0, 0, -0.6);
+	glVertex3f(-0.1, 0, 0);
+	glVertex3f(0, -1, 0);
+	glVertex3f(0, -1, -0.3);
+	glEnd();
+	glColor3f(0, 1, 0);//back
+	glBegin(style_gl);
+	glVertex3f(-0.1, 0, 0);
+	glVertex3f(0.5, 0, 0);
+	glVertex3f(0.5, -1, 0);
+	glVertex3f(0, -1, 0);
+	glEnd();
+	glColor3f(0, 0,1);//front
+	glBegin(style_gl);
+	glVertex3f(0.5, 0, -0.6);
+	glVertex3f(0.5, -1, -0.3);
+	glVertex3f(0, -1, -0.3);
+	glVertex3f(0, 0, -0.6);
+	glEnd();
+	glColor3f(0, 1, 0);//bottom
+	glBegin(style_gl);
+	glVertex3f(0.5, -1, 0);
+	glVertex3f(0, -1, 0);
+	glVertex3f(0, -1, -0.3);
+	glVertex3f(0.5, -1, -0.3);
+	glEnd();
+	//pice3
+	glPushMatrix();
+	glColor3f(1, 1, 0);
+	glTranslatef(0,0.3,0);
+	glBegin(style_gl);//back
+	glVertex3f(0, 0, 0);
+	glVertex3f(-0.3, -0.05, 0);
+	glVertex3f(-0.3, 0.5, 0);
+	glVertex3f(0, 1, 0);
+	glEnd();
+	glBegin(style_gl);//front
+	glVertex3f(0, 0, -0.1);
+	glVertex3f(-0.3, -0.05, -0.1);
+	glVertex3f(-0.3, 0.5, -0.1);
+	glVertex3f(0, 1, -0.1);
+	glEnd();
+	glColor3f(1, 0, 0);
+	glBegin(style_gl);//left
+	glVertex3f(0, 0, 0);
+	glVertex3f(0, 0, -0.1);
+	glVertex3f(0, 1, -0.1);
+	glVertex3f(0, 1, 0);
+	glEnd();
+	glBegin(style_gl);//top
+	glVertex3f(0, 1, 0);
+	glVertex3f(-0.3, 0.5, 0);
+	glVertex3f(-0.3, 0.5, -0.1);
+	glVertex3f(0, 1, -0.1);
+	glEnd();
+	glBegin(style_gl);//left
+	glVertex3f(-0.3, -0.05, 0);
+	glVertex3f(-0.3, 0.5, 0);
+	glVertex3f(-0.3, 0.5, -0.1);
+	glVertex3f(-0.3, -0.05, -0.1);
+	glEnd();
+	glBegin(style_gl);//bottom
+	glVertex3f(0, 0, 0);
+	glVertex3f(-0.3, -0.05, 0);
+	glVertex3f(-0.3, -0.05, -0.1);
+	glVertex3f(0, 0, -0.1);
+	glEnd();
+	glPopMatrix();
+	//support 
+	glBegin(style_gl);//right
+	glVertex3f(0.2, 0.2, -0.6);
+	glVertex3f(0.2, 0, -0.6);
+	glVertex3f(0.2, 0.2, -0.8);
+	glVertex3f(0.2, 0.3, -0.7);
+	glEnd();
+	glBegin(style_gl);//left
+	glVertex3f(0.3, 0.2, -0.6);
+	glVertex3f(0.3, 0, -0.6);
+	glVertex3f(0.3, 0.2, -0.8);
+	glVertex3f(0.3, 0.3, -0.7);
+	glEnd();
+	glBegin(style_gl);//front
+	glVertex3f(0.2, 0.2, -0.8);
+	glVertex3f(0.3, 0.2, -0.8);
+	glVertex3f(0.3, 0.3, -0.7);
+	glVertex3f(0.2, 0.3, -0.7);
+	glEnd();
+	glBegin(style_gl);//top
+	glVertex3f(0.2, 0.2, -0.6);
+	glVertex3f(0.3, 0.2, -0.6);
+	glVertex3f(0.3, 0.3, -0.7);
+	glVertex3f(0.2, 0.3, -0.7);
+	glEnd();
+	glBegin(style_gl);//bottom
+	glVertex3f(0.2, 0, -0.6);
+	glVertex3f(0.3, 0, -0.6);
+	glVertex3f(0.3, 0.2, -0.8);
+	glVertex3f(0.2, 0.2, -0.8);
+	glEnd();
+	//plane
+	glPushMatrix();
+	glRotatef(45, 1, 0, 0);
+	glTranslatef(0, -0.7, -0.9);
+	glColor3f(0, 0, 0);
+	rect(0.5,0.5,0.2,style_gl);
+	//pice4
+	glPushMatrix();
+	glScalef(1.2,1.2,1);
+	glTranslatef(0, -0.1, 0);
+	glRotatef(15, 0, 1, 0);
+	glColor3f(1, 0, 1);//front
+	glBegin(style_gl);
+	glVertex3f(0, -0.1, 0);
+	glVertex3f(0, 0.5, 0);
+	glVertex3f(-0.2, 0.8, 0);
+	glVertex3f(-0.7, 0.6, 0);
+	glVertex3f(-0.75, -0.3, 0);
+	glEnd();
+	glBegin(style_gl);//back
+	glVertex3f(0, -0.1, 0.2);
+	glVertex3f(0, 0.5, 0.2);
+	glVertex3f(-0.2, 0.8, 0.2);
+	glVertex3f(-0.7, 0.6, 0.2);
+	glVertex3f(-0.75, -0.3, 0.2);
+	glEnd();
+	glColor3f(1, 1, 0);
+	glBegin(style_gl);//topleft
+	glVertex3f(0, 0.5, 0);
+	glVertex3f(-0.2, 0.8, 0);
+	glVertex3f(-0.2, 0.8, 0.2);
+	glVertex3f(0, 0.5, 0.2);
+	glEnd();
+	glBegin(style_gl);//topright
+	glVertex3f(-0.2, 0.8, 0);
+	glVertex3f(-0.7, 0.6, 0);
+	glVertex3f(-0.7, 0.6, 0.2);
+	glVertex3f(-0.2, 0.8, 0.2);
+	glEnd();
+	glBegin(style_gl);//left
+	glVertex3f(0, -0.1, 0);
+	glVertex3f(0, 0.5, 0);
+	glVertex3f(0, 0.5, 0.2);
+	glVertex3f(0, -0.1, 0.2);
+	glEnd();
+	glBegin(style_gl);//right
+	glVertex3f(-0.7, 0.6, 0);
+	glVertex3f(-0.75, -0.3, 0);
+	glVertex3f(-0.75, -0.3, 0.2);
+	glVertex3f(-0.7, 0.6, 0.2);
+	glEnd();
+	glBegin(style_gl);//bottom
+	glVertex3f(0, -0.1, 0);
+	glVertex3f(-0.75, -0.3, 0);
+	glVertex3f(-0.75, -0.3, 0.2);
+	glVertex3f(0, -0.1, 0.2);
+	glEnd();
+	glPopMatrix();
+	glPopMatrix();
 
-	glLightfv(GL_LIGHT0, GL_AMBIENT, ambL);
-	glLightfv(GL_LIGHT0, GL_POSITION, posA);
-	glEnable(GL_LIGHT0);
+	glPopMatrix();
+}
 
-	glLightfv(GL_LIGHT1, GL_DIFFUSE, difL);
-	glLightfv(GL_LIGHT1, GL_POSITION, posB);
-	glEnable(GL_LIGHT1);
+void arm_upper() {
+	glPushMatrix();
+	glColor3f(1, 0, 0);
+	glTranslatef(1.8, 0, 0);
+	sphere(0.6, 10, 10, style_glu);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(2.2, 0, 0);
+
+	glPushMatrix();
+	glColor3f(0, 1, 0);
+	glTranslatef(0, 0, -0.7);
+	glRotatef(45, 1, 0, 0);
+	rect(1.8, 1, 1, style_gl);
+	glPopMatrix();
+
+	glColor3f(1, 1, 1);
+	glRotatef(90, 0, 1, 0);
+	cylinder(0.4, 0.4, 2, 10, 10, style_glu);
+	glPopMatrix();
+
+	glPushMatrix();//connection part
+	glColor3f(1, 0,0);
+	glTranslatef(4, -0.4, -0.5);
+	rect(0.8,0.8,1,style_gl);
+
+	glPushMatrix();
+	glColor3f(1, 1, 0);
+	glTranslatef(0, -0.2, -0.05);
+	rect(1.8, 0.2, 1.1, style_gl);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(0, 0.8, -0.05);
+	rect(1.8, 0.2, 1.1, style_gl);
+	glPopMatrix();
+
+	glPushMatrix();
+	glColor3f(0, 1, 0);
+	glTranslatef(1.4, 0.9, 0.5);
+	glRotatef(90, 1, 0, 0);
+	cylinder(0.1,0.1,1,10, 10, style_glu);
+	glPopMatrix();
+	glPopMatrix();
+}
+
+void arm_lower() {
+	glPushMatrix();
+	glColor3f(1, 1, 1);
+	glTranslatef(5.2, 0, 0);
+
+	glPushMatrix();
+	glRotatef(90, 0, 1, 0);
+	cylinder(0.4, 0.4, 3, 10, 10, style_glu);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(2.3,-0.5,-0.5);
+	rect(0.5,1,1,style_gl);
+
+	glPushMatrix();
+	glTranslatef(0.1,1,0.35);
+	glColor3f(1, 0, 0);
+	rect(0.3, 0.5, 0.3, style_gl);
+	glPopMatrix();
+
+	glPushMatrix();
+	glColor3f(0, 0, 1);
+	glTranslatef(-2,1.5,-0.5);
+	rect(4, 0.3, 2, style_gl);
+	glPopMatrix();
+
+	glPopMatrix();
+
+	glPushMatrix();
+	glColor3f(0,1,0);
+	glTranslatef(0.3,0,-0.7);
+	glRotatef(45,1,0,0);
+	rect(2,1,1,style_gl);
+	glPopMatrix();
+
+	glPopMatrix();
+}
+
+void finger1() {
+	// Base connection
+	glPushMatrix();
+	glRotatef(90, 1, 0, 0);
+	glColor3f(0, 0, 0);
+	cylinder(0.2, 0.2, 0.1, 20, 20, style_glu);
+	glPushMatrix();
+	disk(0, 0.2, 20, 20, style_glu);
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(0, 0, 0.1);
+	disk(0, 0.2, 20, 20, style_glu);
+	glPopMatrix();
+	glPopMatrix();
+
+	// First section of the finger
+	glPushMatrix();
+	glRotatef(finger_current_angle, 0, 1, 0); // Rotate the first section
+	glPushMatrix();
+	glColor3f(1, 0, 0);
+	glTranslatef(0, -0.15, 0);
+	rect(0.6, 0.2, 0.4, style_gl);
+	glPopMatrix();
+
+	// Connection between sections
+	glPushMatrix();
+	glTranslatef(0.6, 0, 0.2);
+	glRotatef(90, 1, 0, 0);
+	glColor3f(0, 0, 0);
+	cylinder(0.2, 0.2, 0.1, 20, 20, style_glu);
+	glPushMatrix();
+	disk(0, 0.2, 20, 20, style_glu);
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(0, 0, 0.1);
+	disk(0, 0.2, 20, 20, style_glu);
+	glPopMatrix();
+	glPopMatrix();
+
+	// Second section of the finger
+	glPushMatrix();
+	glTranslatef(0.7, -0.15, 0);
+	glRotatef(finger_current_angle, 0, 1, 0); // Rotate the second section
+	glColor3f(1, 0, 0);
+	rect(0.5, 0.2, 0.4, style_gl);
+	glPopMatrix();
+
+	glPopMatrix(); // End of the first section
+}
+
+void finger2() {
+	// Base connection
+	glPushMatrix();
+	glColor3f(0, 0, 0);
+	cylinder(0.2, 0.2, 0.1, 20, 20, style_glu);
+	glPushMatrix();
+	disk(0, 0.2, 20, 20, style_glu);
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(0, 0, 0.1);
+	disk(0, 0.2, 20, 20, style_glu);
+	glPopMatrix();
+	glPopMatrix();
+
+	// First section of the finger
+	glPushMatrix();
+	glTranslatef(0, 0, 0); // Move to the base connection pivot
+	glRotatef(finger_current_angle, 0, 0, -1); // Rotate the first section
+	glPushMatrix();
+	glColor3f(1, 0, 0);
+	glTranslatef(0, -0.2, -0.05); // Translate to draw the first section
+	rect(0.4, 0.4, 0.2, style_gl);
+	glPopMatrix();
+
+	// Connection between first and second section
+	glPushMatrix();
+	glTranslatef(0.4, 0, 0); // Adjust translation for connection alignment
+	glColor3f(0, 0, 0);
+	cylinder(0.2, 0.2, 0.1, 20, 20, style_glu);
+	glPushMatrix();
+	disk(0, 0.2, 20, 20, style_glu);
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(0, 0, 0.1);
+	disk(0, 0.2, 20, 20, style_glu);
+	glPopMatrix();
+	glPopMatrix();
+
+	// Second section of the finger
+	glPushMatrix();
+	glTranslatef(0.4, 0, 0); // Move to the second section pivot
+	glRotatef(finger_current_angle, 0, 0, -1); // Rotate the second section
+	glPushMatrix();
+	glColor3f(1, 0, 0);
+	glTranslatef(0, -0.2, -0.05); // Translate to draw the second section
+	rect(0.4, 0.4, 0.2, style_gl);
+	glPopMatrix();
+
+	// Connection between second and third section
+	glPushMatrix();
+	glTranslatef(0.4, 0, 0); // Adjust translation for connection alignment
+	glColor3f(0, 0, 0);
+	cylinder(0.2, 0.2, 0.1, 20, 20, style_glu);
+	glPushMatrix();
+	disk(0, 0.2, 20, 20, style_glu);
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(0, 0, 0.1);
+	disk(0, 0.2, 20, 20, style_glu);
+	glPopMatrix();
+	glPopMatrix();
+
+	// Third section of the finger
+	glPushMatrix();
+	glTranslatef(0.4, 0, 0); // Move to the third section pivot
+	glRotatef(finger_current_angle, 0, 0, -1); // Rotate the third section
+	glPushMatrix();
+	glColor3f(1, 0, 0);
+	glTranslatef(0, -0.2, -0.05); // Translate to draw the third section
+	rect(0.4, 0.4, 0.2, style_gl);
+	glPopMatrix();
+
+	glPopMatrix(); // Close third section
+	glPopMatrix(); // Close second section
+	glPopMatrix(); // Close first section
+}
+
+void hand() {
+	glPushMatrix();
+	glColor3f(1, 0, 1);
+	glTranslatef(8.2, 0.1, -0.5);
+	rect(1, 0.3, 1, style_gl);
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(8.2, -0.1, -0.5);
+	rect(0.5, 0.3, 1, style_gl);
+	glPopMatrix();
+	glPushMatrix();
+	glColor3f(0, 1, 0);
+	glTranslatef(8.2, 0.4, -0.5);
+	glRotatef(-5,0,0,1);
+	rect(1.4, 0.1, 1, style_gl);
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(8.3, -0.1, 0.6);
+	glRotatef(40,0,0,-1);
+	finger1();
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(8.8, 0.05, 0.4);
+	finger2();
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(8.8, 0.05, 0.1);
+	finger2();
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(8.8, 0.05, -0.2);
+	finger2();
+	glPopMatrix();
+	glPushMatrix();
+	glTranslatef(8.8, 0.05, -0.5);
+	finger2();
+	glPopMatrix();
+
+}
+
+void arm() {
+	glPushMatrix();
+	glColor3f(1,1,1);
+	glRotatef(90,0,1,0);
+	cylinder(0.4,0.4,1.5,10,10,style_glu);
+	glPopMatrix();
+
+	glPushMatrix();
+	glColor3f(1, 1, 0);
+	glTranslatef(0.9,-2,-1.5);
+	rect(0.3,6,2,style_gl);
+	glPopMatrix();
+
+	glPushMatrix();
+	glColor3f(1, 1, 0);
+	glTranslatef(0.9, -1.8, -0.5);
+	rect(0.3, 4, 2, style_gl);
+	glPopMatrix();
+
+	glPushMatrix();
+	glScalef(0.8, 0.8, 0.8);
+	arm_upper();
+	arm_lower();
+	glPushMatrix();
+	glRotatef(hand_current_angle,1,0,0);
+	hand();
+	glPopMatrix();
+	glPopMatrix();
+}
+
+void body() {
+	body_upper();
+	cheast();
+
+	glPushMatrix();
+	glScalef(-1, 1, 1);
+	cheast();
+	glPopMatrix();
+
+	glPushMatrix();
+	glRotatef(180, 0, 1, 0);
+	glTranslatef(0, 4.5, 0);
+	cheast_middle();
+	glPopMatrix();
+
+	glPushMatrix();
+	glScalef(1.5, 1.5, 1.5);
+	glPushMatrix();
+	glTranslatef(-0.7,1.2,-1.2);
+	body_back();
+	glPopMatrix();
+	glPushMatrix();
+	glScalef(-1, 1, 1);
+	glTranslatef(-0.7, 1.2, -1.2);
+	body_back();
+	glPopMatrix();
+	glPopMatrix();
+
+	glPushMatrix();
+	glTranslatef(2.2,3.5,-0.5);
+	arm();
+	glPopMatrix();
+	glPushMatrix();
+	glScalef(-1, 1, 1);
+	glTranslatef(2.2, 3.5, -0.5);
+	arm();
+	glPopMatrix();
+	
+
 }
 
 void display()
@@ -737,21 +1437,9 @@ void display()
 	glPushMatrix();
 	camera();
 
-	//body_upper();
-	//cheast();
-
-	//glPushMatrix();
-	//glScalef(-1, 1, 1);
-	//cheast();
-	//glPopMatrix();
-
-	//glPushMatrix();
-	//glRotatef(180, 0, 1, 0);
-	//glTranslatef(0,4.5,0);
-	//cheast_middle();
-	//glPopMatrix();
+	body();
 	
-	cheast_frame2();
+	//arm();
 
 	glPopMatrix();//camera
 }
