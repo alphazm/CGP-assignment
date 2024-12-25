@@ -29,7 +29,7 @@ struct fourIrregularPoint
 
 float rx = 0.0, ry = 0.0, rz = 0.0, rs = 1.0;
 
-bool weaponSwitch = false;
+bool weaponSwitch = false, styleSwitch = false;
 
 color black = { 0.01,0.01,0.01 }, white = { 0.99,0.99,0.99 };
 color purple = { 0.5,0.0,1.0 }, darkPurple = { 0.25,0.0,0.5 };
@@ -79,6 +79,10 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 		else if (wParam == 0x43)
 		{
 			weaponSwitch = !weaponSwitch;
+		}
+		else if (wParam == 0x50)
+		{
+			styleSwitch = !styleSwitch;
 		}
 		break;
 
@@ -337,6 +341,16 @@ void drawSphere(float radius)
 	gluDeleteQuadric(sphere);
 }
 
+void drawLineSphere(float radius)
+{
+	GLUquadricObj* sphere = NULL;		//create quadric obj pointer
+	sphere = gluNewQuadric();		//create quadric obj in the memory
+	gluQuadricDrawStyle(sphere, GLU_LINE);		//change to full color or draw line
+	gluQuadricTexture(sphere, false);		//disable texture
+	gluSphere(sphere, radius, 30, 10);		//draw a sphere
+	gluDeleteQuadric(sphere);
+}
+
 void drawDisk(float inr, float outr, float slices = 30, float loops = 30)
 {
 	GLUquadricObj* disk = gluNewQuadric();
@@ -359,7 +373,14 @@ void fourPointIrregularShape(fourIrregularPoint point, bool fill = true, bool or
 {
 	if (oriColor)
 	{
-		glBegin(GL_QUADS);
+		if (fill)
+		{
+			glBegin(GL_QUADS);
+		}
+		else
+		{
+			glBegin(GL_LINE_LOOP);
+		}
 
 		//front
 		glColor3f(1.0, 0.0, 0.0);		//red
@@ -407,7 +428,14 @@ void fourPointIrregularShape(fourIrregularPoint point, bool fill = true, bool or
 	}
 	else
 	{
-		glBegin(GL_QUADS);
+		if (fill)
+		{
+			glBegin(GL_QUADS);
+		}
+		else
+		{
+			glBegin(GL_LINE_LOOP);
+		}
 
 		//front
 		glColor3f(fC.r, fC.g, fC.b);
@@ -498,7 +526,7 @@ void drawCube(float size)
 	glEnd();
 }
 
-//componet of head
+//component of head
 void neck()
 {
 	glPushMatrix();
@@ -516,7 +544,236 @@ void neck()
 	glPopMatrix();
 }
 
+void neckLine()
+{
+	glPushMatrix();
+	glTranslatef(0.0, 0.0, 0.3);
+	glRotatef(-135, 1.0, 0.0, 0.0);
+
+	//inner neck
+	glColor3f(0.18f, 0.18f, 0.18f);		//black-ish grey
+	drawLineCylinder(0.2, 0.1, 0.2);
+
+	//outer neck
+	glColor3f(1.0f, 0.7f, 0.0f);		//golden yellow
+	drawHalfLineCylinder(0.2, 0.175, 0.2, 30);
+
+	glPopMatrix();
+}
+
 void necklace()
+{
+	fourIrregularPoint point, another;
+
+	point.fld.x = -0.75, point.fld.y = -0.1, point.fld.z = 0;
+	point.flu.x = -0.75, point.flu.y = -0.01, point.flu.z = 0;
+	point.fru.x = -0.575, point.fru.y = 0.1, point.fru.z = 0;
+	point.frd.x = -0.55, point.frd.y = 0.09, point.frd.z = 0;
+
+	point.bld.x = -0.825, point.bld.y = -0.15, point.bld.z = 0.15;
+	point.blu.x = -0.825, point.blu.y = -0.03, point.blu.z = 0.15;
+	point.bru.x = -0.575, point.bru.y = 0.1, point.bru.z = 0.15;
+	point.brd.x = -0.55, point.brd.y = 0.09, point.brd.z = 0.15;
+
+	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+
+	point = setBaToFPoint(point);
+
+	point.bld.x = -0.775, point.bld.y = -0.15, point.bld.z = 0.4;
+	point.blu.x = -0.775, point.blu.y = -0.03, point.blu.z = 0.4;
+	point.bru.x = -0.575, point.bru.y = 0.1, point.bru.z = 0.25;
+	point.brd.x = -0.55, point.brd.y = 0.075, point.brd.z = 0.225;
+
+	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+
+	point = setBaToFPoint(point);
+
+	point.bld.x = -0.7, point.bld.y = -0.15, point.bld.z = 0.5;
+	point.blu.x = -0.675, point.blu.y = -0.03, point.blu.z = 0.5;
+	point.bru.x = -0.475, point.bru.y = 0.1, point.bru.z = 0.25;
+	point.brd.x = -0.45, point.brd.y = 0.075, point.brd.z = 0.225;
+
+	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+
+	//joint
+	point = setBaToFPoint(point);
+
+	point.bld.x = -0.375, point.bld.y = 0.1, point.bld.z = 0.5;
+	point.blu.x = -0.375, point.blu.y = 0.125, point.blu.z = 0.5;
+	point.bru.x = -0.35, point.bru.y = 0.125, point.bru.z = 0.15;
+	point.brd.x = -0.35, point.brd.y = 0.1, point.brd.z = 0.125;
+
+	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+
+	another = setRToBaPoint(point);
+
+	//front to back view, we are in -z view to +z view
+	another.bld.x = -0.5, another.bld.y = 0.15, another.bld.z = 0;
+	another.blu.x = -0.475, another.blu.y = 0.175, another.blu.z = 0;
+	another.bru.x = -0.35, another.bru.y = 0.15, another.bru.z = 0;
+	another.brd.x = -0.35, another.brd.y = 0.125, another.brd.z = 0;
+
+	fourPointIrregularShape(another, true, false, purple, purple, purple, purple, purple, purple);
+
+	point = setLToFPoint(point);
+
+	point.bld.x = -0.7, point.bld.y = -0.05, point.bld.z = 0.75;
+	point.blu.x = -0.675, point.blu.y = 0.07, point.blu.z = 0.75;
+	point.bru.x = -0.375, point.bru.y = 0.2, point.bru.z = 0.75;
+	point.brd.x = -0.35, point.brd.y = 0.175, point.brd.z = 0.75;
+
+	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+
+	point = setBaToFPoint(point);
+
+	point.bld.x = -0.575, point.bld.y = 0.05, point.bld.z = 1.375;
+	point.blu.x = -0.55, point.blu.y = 0.17, point.blu.z = 1.375;
+	point.bru.x = -0.325, point.bru.y = 0.3, point.bru.z = 1.0;
+	point.brd.x = -0.3, point.brd.y = 0.275, point.brd.z = 1.0;
+
+	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+
+	point = setBaToFPoint(point);
+
+	point.bld.x = 0, point.bld.y = 0.15, point.bld.z = 1.675;
+	point.blu.x = 0, point.blu.y = 0.27, point.blu.z = 1.675;
+	point.bru.x = 0, point.bru.y = 0.4, point.bru.z = 1.25;
+	point.brd.x = 0, point.brd.y = 0.375, point.brd.z = 1.25;
+
+	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+
+	//just mirror the left side
+	point.fld.x = 0.75, point.fld.y = -0.1, point.fld.z = 0;
+	point.flu.x = 0.75, point.flu.y = -0.01, point.flu.z = 0;
+	point.fru.x = 0.575, point.fru.y = 0.1, point.fru.z = 0;
+	point.frd.x = 0.55, point.frd.y = 0.09, point.frd.z = 0;
+
+	point.bld.x = 0.825, point.bld.y = -0.15, point.bld.z = 0.15;
+	point.blu.x = 0.825, point.blu.y = -0.03, point.blu.z = 0.15;
+	point.bru.x = 0.575, point.bru.y = 0.1, point.bru.z = 0.15;
+	point.brd.x = 0.55, point.brd.y = 0.09, point.brd.z = 0.15;
+
+	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+
+	point = setBaToFPoint(point);
+
+	point.bld.x = 0.775, point.bld.y = -0.15, point.bld.z = 0.4;
+	point.blu.x = 0.775, point.blu.y = -0.03, point.blu.z = 0.4;
+	point.bru.x = 0.575, point.bru.y = 0.1, point.bru.z = 0.25;
+	point.brd.x = 0.55, point.brd.y = 0.075, point.brd.z = 0.225;
+
+	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+
+	point = setBaToFPoint(point);
+
+	point.bld.x = 0.7, point.bld.y = -0.15, point.bld.z = 0.5;
+	point.blu.x = 0.675, point.blu.y = -0.03, point.blu.z = 0.5;
+	point.bru.x = 0.475, point.bru.y = 0.1, point.bru.z = 0.25;
+	point.brd.x = 0.45, point.brd.y = 0.075, point.brd.z = 0.225;
+
+	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+
+	//joint
+	point = setBaToFPoint(point);
+
+	point.bld.x = 0.375, point.bld.y = 0.1, point.bld.z = 0.5;
+	point.blu.x = 0.375, point.blu.y = 0.125, point.blu.z = 0.5;
+	point.bru.x = 0.35, point.bru.y = 0.125, point.bru.z = 0.15;
+	point.brd.x = 0.35, point.brd.y = 0.1, point.brd.z = 0.125;
+
+	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+
+	another = setRToBaPoint(point);
+
+	//front to back view, we are in -z view to +z view
+	another.bld.x = 0.5, another.bld.y = 0.15, another.bld.z = 0;
+	another.blu.x = 0.475, another.blu.y = 0.175, another.blu.z = 0;
+	another.bru.x = 0.35, another.bru.y = 0.15, another.bru.z = 0;
+	another.brd.x = 0.35, another.brd.y = 0.125, another.brd.z = 0;
+
+	fourPointIrregularShape(another, true, false, purple, purple, purple, purple, purple, purple);
+
+	point = setLToFPoint(point);
+
+	point.bld.x = 0.7, point.bld.y = -0.05, point.bld.z = 0.75;
+	point.blu.x = 0.675, point.blu.y = 0.07, point.blu.z = 0.75;
+	point.bru.x = 0.375, point.bru.y = 0.2, point.bru.z = 0.75;
+	point.brd.x = 0.35, point.brd.y = 0.175, point.brd.z = 0.75;
+
+	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+
+	point = setBaToFPoint(point);
+
+	point.bld.x = 0.575, point.bld.y = 0.05, point.bld.z = 1.375;
+	point.blu.x = 0.55, point.blu.y = 0.17, point.blu.z = 1.375;
+	point.bru.x = 0.325, point.bru.y = 0.3, point.bru.z = 1.0;
+	point.brd.x = 0.3, point.brd.y = 0.275, point.brd.z = 1.0;
+
+	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+
+	point = setBaToFPoint(point);
+
+	point.bld.x = 0, point.bld.y = 0.15, point.bld.z = 1.675;
+	point.blu.x = 0, point.blu.y = 0.27, point.blu.z = 1.675;
+	point.bru.x = 0, point.bru.y = 0.4, point.bru.z = 1.25;
+	point.brd.x = 0, point.brd.y = 0.375, point.brd.z = 1.25;
+
+	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+
+	//the left turbo
+	point.fld.x = -0.6, point.fld.y = 0.075, point.fld.z = -0.1;
+	point.flu.x = -0.625, point.flu.y = 0.25, point.flu.z = -0.1;
+	point.fru.x = -0.325, point.fru.y = 0.375, point.fru.z = -0.1;
+	point.frd.x = -0.3, point.frd.y = 0.15, point.frd.z = -0.1;
+
+	point.bld.x = -0.6, point.bld.y = 0.075, point.bld.z = 0.1;
+	point.blu.x = -0.625, point.blu.y = 0.25, point.blu.z = 0.1;
+	point.bru.x = -0.325, point.bru.y = 0.375, point.bru.z = 0.1;
+	point.brd.x = -0.3, point.brd.y = 0.15, point.brd.z = 0.1;
+
+	fourPointIrregularShape(point, true, false, lime, lime, lime, lime, lime, lime);
+
+	//the right turbo
+	point.fld.x = 0.6, point.fld.y = 0.075, point.fld.z = -0.1;
+	point.flu.x = 0.625, point.flu.y = 0.25, point.flu.z = -0.1;
+	point.fru.x = 0.325, point.fru.y = 0.375, point.fru.z = -0.1;
+	point.frd.x = 0.3, point.frd.y = 0.15, point.frd.z = -0.1;
+
+	point.bld.x = 0.6, point.bld.y = 0.075, point.bld.z = 0.1;
+	point.blu.x = 0.625, point.blu.y = 0.25, point.blu.z = 0.1;
+	point.bru.x = 0.325, point.bru.y = 0.375, point.bru.z = 0.1;
+	point.brd.x = 0.3, point.brd.y = 0.15, point.brd.z = 0.1;
+
+	fourPointIrregularShape(point, true, false, lime, lime, lime, lime, lime, lime);
+
+	//left turbo wing
+	point.fld.x = -0.9, point.fld.y = 0.1, point.fld.z = -0.1;
+	point.flu.x = -0.9, point.flu.y = 0.125, point.flu.z = -0.1;
+	point.fru.x = -0.6, point.fru.y = 0.25, point.fru.z = -0.1;
+	point.frd.x = -0.6, point.frd.y = 0.2, point.frd.z = -0.1;
+
+	point.bld.x = -0.9, point.bld.y = 0.1, point.bld.z = 0.1;
+	point.blu.x = -0.9, point.blu.y = 0.125, point.blu.z = 0.1;
+	point.bru.x = -0.6, point.bru.y = 0.25, point.bru.z = 0.1;
+	point.brd.x = -0.6, point.brd.y = 0.2, point.brd.z = 0.1;
+
+	fourPointIrregularShape(point, true, false, lime, lime, lime, lime, lime, lime);
+
+	//right turbo wing
+	point.fld.x = 0.9, point.fld.y = 0.1, point.fld.z = -0.1;
+	point.flu.x = 0.9, point.flu.y = 0.125, point.flu.z = -0.1;
+	point.fru.x = 0.6, point.fru.y = 0.25, point.fru.z = -0.1;
+	point.frd.x = 0.6, point.frd.y = 0.2, point.frd.z = -0.1;
+
+	point.bld.x = 0.9, point.bld.y = 0.1, point.bld.z = 0.1;
+	point.blu.x = 0.9, point.blu.y = 0.125, point.blu.z = 0.1;
+	point.bru.x = 0.6, point.bru.y = 0.25, point.bru.z = 0.1;
+	point.brd.x = 0.6, point.brd.y = 0.2, point.brd.z = 0.1;
+
+	fourPointIrregularShape(point, true, false, lime, lime, lime, lime, lime, lime);
+}
+
+void necklaceLine()
 {
 	fourIrregularPoint point, another;
 
@@ -741,6 +998,19 @@ void brain()
 	glPopMatrix();
 }
 
+void brainLine()
+{
+	glPushMatrix();
+
+	glTranslatef(0.0, 0.5, 0.675);
+
+	glColor3f(0.8, 0.8, 0.8);		//white-ish grey
+
+	drawLineSphere(0.25);
+
+	glPopMatrix();
+}
+
 void faceArmor()
 {
 	//lower part
@@ -764,6 +1034,61 @@ void faceArmor()
 	glRotatef(-90, 1.0, 0.0, 0.0);
 
 	drawHalfCylinder(0.5, 0.3, 0.1);
+
+	glPopMatrix();
+
+	fourIrregularPoint point;
+
+	//left side extend
+	point.fld.x = -0.3, point.fld.y = 0.3, point.fld.z = -0.1;
+	point.flu.x = -0.5, point.flu.y = 0.4, point.flu.z = -0.1;
+	point.fru.x = -0.3, point.fru.y = 0.5, point.fru.z = -0.1;
+	point.frd.x = -0.3, point.frd.y = 0.4, point.frd.z = -0.1;
+
+	point.bld.x = -0.3, point.bld.y = 0.35, point.bld.z = 0.1;
+	point.blu.x = -0.5, point.blu.y = 0.45, point.blu.z = 0.1;
+	point.bru.x = -0.3, point.bru.y = 0.55, point.bru.z = 0.1;
+	point.brd.x = -0.3, point.brd.y = 0.45, point.brd.z = 0.1;
+
+	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+
+	//right side extend
+	point.fld.x = 0.3, point.fld.y = 0.3, point.fld.z = -0.1;
+	point.flu.x = 0.5, point.flu.y = 0.4, point.flu.z = -0.1;
+	point.fru.x = 0.3, point.fru.y = 0.5, point.fru.z = -0.1;
+	point.frd.x = 0.3, point.frd.y = 0.4, point.frd.z = -0.1;
+
+	point.bld.x = 0.3, point.bld.y = 0.35, point.bld.z = 0.1;
+	point.blu.x = 0.5, point.blu.y = 0.45, point.blu.z = 0.1;
+	point.bru.x = 0.3, point.bru.y = 0.55, point.bru.z = 0.1;
+	point.brd.x = 0.3, point.brd.y = 0.45, point.brd.z = 0.1;
+
+	fourPointIrregularShape(point, true, false, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple);
+}
+
+void faceArmorLine()
+{
+	//lower part
+	glColor3f(purple.r, purple.g, purple.b);		//purple
+
+	glPushMatrix();
+
+	glTranslatef(0.0, 0.3, -0.1);
+	glRotatef(-90, 1.0, 0.0, 0.0);
+
+	drawHalfLineCylinder(0.3, 0.5, 0.1);
+
+	glPopMatrix();
+
+	//upper part
+	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark purple
+
+	glPushMatrix();
+
+	glTranslatef(0.0, 0.4, -0.1);
+	glRotatef(-90, 1.0, 0.0, 0.0);
+
+	drawHalfLineCylinder(0.5, 0.3, 0.1);
 
 	glPopMatrix();
 
@@ -870,6 +1195,96 @@ void topArmor()
 	point.bru.x = -0.275, point.bru.y = 0.65, point.bru.z = 0.55;
 	point.brd.x = -0.3, point.brd.y = 0.4, point.brd.z = 0.35;
 
+	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+
+	//right side lower
+	point.fld.x = 0.225, point.fld.y = 0.5, point.fld.z = 0.0;
+	point.flu.x = 0.1875, point.flu.y = 0.65, point.flu.z = 0.0;
+	point.fru.x = 0.175, point.fru.y = 0.65, point.fru.z = 0.0;
+	point.frd.x = 0.1875, point.frd.y = 0.5, point.frd.z = 0.0;
+
+	point.bld.x = 0.35, point.bld.y = 0.4, point.bld.z = 0.35;
+	point.blu.x = 0.325, point.blu.y = 0.65, point.blu.z = 0.55;
+	point.bru.x = 0.3, point.bru.y = 0.65, point.bru.z = 0.55;
+	point.brd.x = 0.325, point.brd.y = 0.4, point.brd.z = 0.35;
+
+	fourPointIrregularShape(point, true, false, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple);
+}
+
+void topArmorLine()
+{
+	glColor3f(purple.r, purple.g, purple.b);		//purple
+
+	//back piece
+	glPushMatrix();
+
+	glTranslatef(0.0, 0.575, 0.45);
+
+	drawHalfLineCylinder(0.3, 0.25, 0.5);
+
+	glPushMatrix();
+
+	glTranslatef(0.0, 0.0, 0.5);
+
+	drawHalfLineCylinder(0.25, 0.1, 0.2);
+
+	glPushMatrix();
+
+	glTranslatef(0.0, 0.0, 0.2);
+
+	drawHalfLineCylinder(0.1, 0.0, 0.05);
+
+	glPopMatrix();
+	glPopMatrix();
+	glPopMatrix();
+
+	//front piece
+	glPushMatrix();
+
+	glTranslatef(0.0, 0.575, -0.05);
+
+	drawHalfLineCylinder(0.2, 0.25, 0.6);
+
+	glPushMatrix();
+
+	glTranslatef(0.0, 0.0, -0.2);
+
+	drawHalfLineCylinder(0.1, 0.2, 0.2);
+
+	glPushMatrix();
+
+	glTranslatef(0.0, 0.0, -0.05);
+
+	drawHalfLineCylinder(0.0, 0.1, 0.05);
+
+	glPopMatrix();
+	glPopMatrix();
+	glPopMatrix();
+
+	//the between
+	glPushMatrix();
+
+	glTranslatef(0.0, 0.575, 0.5);
+
+	glColor3f(black.r, black.g, black.b);		//black
+
+	drawHalfLineCylinder(0.0, 0.2825, 0.0);
+
+	glPopMatrix();
+
+	fourIrregularPoint point;
+
+	//left side lower
+	point.fld.x = -0.225, point.fld.y = 0.5, point.fld.z = 0.0;
+	point.flu.x = -0.1875, point.flu.y = 0.65, point.flu.z = 0.0;
+	point.fru.x = -0.175, point.fru.y = 0.65, point.fru.z = 0.0;
+	point.frd.x = -0.1875, point.frd.y = 0.5, point.frd.z = 0.0;
+
+	point.bld.x = -0.325, point.bld.y = 0.4, point.bld.z = 0.35;
+	point.blu.x = -0.3, point.blu.y = 0.65, point.blu.z = 0.55;
+	point.bru.x = -0.275, point.bru.y = 0.65, point.bru.z = 0.55;
+	point.brd.x = -0.3, point.brd.y = 0.4, point.brd.z = 0.35;
+
 	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
 
 	//right side lower
@@ -887,6 +1302,89 @@ void topArmor()
 }
 
 void eyes()
+{
+	fourIrregularPoint point;
+
+	//left eye
+	point.fld.x = -0.3, point.fld.y = 0.45, point.fld.z = -0.3;
+	point.flu.x = -0.05, point.flu.y = 0.55, point.flu.z = -0.3;
+	point.fru.x = -0.025, point.fru.y = 0.6, point.fru.z = -0.3;
+	point.frd.x = -0.025, point.frd.y = 0.45, point.frd.z = -0.3;
+
+	point.bld.x = -0.3, point.bld.y = 0.4, point.bld.z = 0.15;
+	point.blu.x = -0.125, point.blu.y = 0.65, point.blu.z = 0.15;
+	point.bru.x = -0.1, point.bru.y = 0.65, point.bru.z = 0.15;
+	point.brd.x = -0.1, point.brd.y = 0.4, point.brd.z = 0.15;
+
+	fourPointIrregularShape(point, true, false, black, black, black, black, black, black);
+
+	//left eye ball
+
+	point.fld.x = -0.2125, point.fld.y = 0.475, point.fld.z = -0.3;
+	point.flu.x = -0.0625, point.flu.y = 0.525, point.flu.z = -0.3;
+	point.fru.x = -0.0625, point.fru.y = 0.525, point.fru.z = -0.3;
+	point.frd.x = -0.2125, point.frd.y = 0.475, point.frd.z = -0.3;
+
+	point.bld.x = -0.2125, point.bld.y = 0.525, point.bld.z = -0.1;
+	point.blu.x = -0.1125, point.blu.y = 0.625, point.blu.z = -0.1;
+	point.bru.x = -0.1125, point.bru.y = 0.625, point.bru.z = -0.1;
+	point.brd.x = -0.2125, point.brd.y = 0.525, point.brd.z = -0.1;
+
+	fourPointIrregularShape(point, true, false, white, white, white, white, white, white);
+
+	//right eye
+	point.fld.x = 0.3, point.fld.y = 0.45, point.fld.z = -0.3;
+	point.flu.x = 0.05, point.flu.y = 0.55, point.flu.z = -0.3;
+	point.fru.x = 0.025, point.fru.y = 0.6, point.fru.z = -0.3;
+	point.frd.x = 0.025, point.frd.y = 0.45, point.frd.z = -0.3;
+
+	point.bld.x = 0.3, point.bld.y = 0.4, point.bld.z = 0.15;
+	point.blu.x = 0.125, point.blu.y = 0.65, point.blu.z = 0.15;
+	point.bru.x = 0.1, point.bru.y = 0.65, point.bru.z = 0.15;
+	point.brd.x = 0.1, point.brd.y = 0.4, point.brd.z = 0.15;
+
+	fourPointIrregularShape(point, true, false, black, black, black, black, black, black);
+
+	//right eye ball
+
+	point.fld.x = 0.2125, point.fld.y = 0.475, point.fld.z = -0.3;
+	point.flu.x = 0.0625, point.flu.y = 0.525, point.flu.z = -0.3;
+	point.fru.x = 0.0625, point.fru.y = 0.525, point.fru.z = -0.3;
+	point.frd.x = 0.2125, point.frd.y = 0.475, point.frd.z = -0.3;
+
+	point.bld.x = 0.2125, point.bld.y = 0.525, point.bld.z = -0.1;
+	point.blu.x = 0.1125, point.blu.y = 0.625, point.blu.z = -0.1;
+	point.bru.x = 0.1125, point.bru.y = 0.625, point.bru.z = -0.1;
+	point.brd.x = 0.2125, point.brd.y = 0.525, point.brd.z = -0.1;
+
+	fourPointIrregularShape(point, true, false, white, white, white, white, white, white);
+
+	//eye side
+	glPushMatrix();
+
+	glTranslatef(0.0, 0.4, 0.0);
+	glRotatef(-90, 1.0, 0.0, 0.0);
+
+	glColor3f(purple.r, purple.g, purple.b);		//purple
+
+	drawHalfCylinder(0.5, 0.1, 0.2);
+
+	glPopMatrix();
+
+	//eye middle
+	glPushMatrix();
+
+	glTranslatef(0.0, 0.4, -0.2);
+	glRotatef(-90, 1.0, 0.0, 0.0);
+
+	glColor3f(purple.r, purple.g, purple.b);		//purple
+
+	drawHalfCylinder(0.35, 0.0, 0.2);
+
+	glPopMatrix();
+}
+
+void eyesLine()
 {
 	fourIrregularPoint point;
 
@@ -952,7 +1450,7 @@ void eyes()
 
 	glColor3f(purple.r, purple.g, purple.b);		//purple
 
-	drawHalfCylinder(0.5, 0.1, 0.2);
+	drawHalfLineCylinder(0.5, 0.1, 0.2);
 
 	glPopMatrix();
 
@@ -964,7 +1462,7 @@ void eyes()
 
 	glColor3f(purple.r, purple.g, purple.b);		//purple
 
-	drawHalfCylinder(0.35, 0.0, 0.2);
+	drawHalfLineCylinder(0.35, 0.0, 0.2);
 
 	glPopMatrix();
 }
@@ -979,6 +1477,20 @@ void mouth()
 	glRotatef(-90, 1.0, 0.0, 0.0);
 
 	drawHalfCylinder(0.0, 0.3, 0.4);
+
+	glPopMatrix();
+}
+
+void mouthLine()
+{
+	glColor3f(0.8, 0.8, 0.8);		//white-ish, grey
+
+	glPushMatrix();
+
+	glTranslatef(0.0, -0.1, -0.1);
+	glRotatef(-90, 1.0, 0.0, 0.0);
+
+	drawHalfLineCylinder(0.0, 0.3, 0.4);
 
 	glPopMatrix();
 }
@@ -1011,6 +1523,39 @@ void corn()
 	glTranslatef(0.0, 0.0, 0.75);
 
 	drawCylinder(0.025, 0.0, 0.0);
+
+	glPopMatrix();
+	glPopMatrix();
+}
+
+void cornLine()
+{
+	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark purple
+
+	glPushMatrix();
+
+	glTranslatef(0.0, 0.6, -0.2);
+	glRotatef(250.0, 1.0, 0.0, 0.0);
+
+	drawLineCylinder(0.05, 0.025, 0.75);
+
+	glColor3f(lime.r, lime.g, lime.b);		//lime
+
+	glPushMatrix();
+
+	glTranslatef(0.0, 0.0, 0.1875);
+
+	drawLineCylinder(0.05, 0.05, 0.1875);
+
+	glPopMatrix();
+
+	glColor3f(purple.r, purple.g, purple.b);		//purple
+
+	glPushMatrix();
+
+	glTranslatef(0.0, 0.0, 0.75);
+
+	drawLineCylinder(0.025, 0.0, 0.0);
 
 	glPopMatrix();
 	glPopMatrix();
@@ -1101,6 +1646,91 @@ void weapon()
 	glPopMatrix();
 }
 
+void weaponLine()
+{
+	glColor3f(lime.r, lime.g, lime.b);
+
+	//bottom spike lower
+	glPushMatrix();
+
+	glTranslatef(0.0, -0.9, 0.0);
+	glRotatef(-90, 1.0, 0.0, 0.0);
+
+	drawLineCylinder(0.0, 0.1, 0.15);
+
+	glPopMatrix();
+
+	//bottom spike upper
+	glPushMatrix();
+
+	glTranslatef(0.0, -0.75, 0.0);
+	glRotatef(-90, 1.0, 0.0, 0.0);
+
+	drawLineCylinder(0.1, 0.0, 0.15);
+
+	glPopMatrix();
+
+	glColor3f(purple.r, purple.g, purple.b);
+
+	//handle
+	glPushMatrix();
+
+	glTranslatef(0.0, -0.7, 0.0);
+	glRotatef(-90, 1.0, 0.0, 0.0);
+
+	drawLineCylinder(0.05, 0.05, 0.8);
+
+	glPopMatrix();
+
+	//left joint
+	glPushMatrix();
+
+	glRotatef(-90, 0.0, 1.0, 0.0);
+	glRotatef(-45, 1.0, 0.0, 0.0);
+
+	glColor3f(lime.r, lime.g, lime.b);
+	drawLineSphere(0.075);
+	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);
+	drawLineCylinder(0.05, 0.1, 0.3);
+
+	glPushMatrix();
+
+	glTranslatef(0.0, 0.0, 0.3);
+	glRotatef(-56.25, 1.0, 0.0, 0.0);
+
+	glColor3f(lime.r, lime.g, lime.b);
+	drawLineSphere(0.1);
+	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);
+	drawLineCylinder(0.1, 0.0, 0.5);
+
+	glPopMatrix();
+	glPopMatrix();
+
+	//right joint
+	glPushMatrix();
+
+	glRotatef(-90, 0.0, 1.0, 0.0);
+	glRotatef(-135, 1.0, 0.0, 0.0);
+
+	glColor3f(lime.r, lime.g, lime.b);
+	drawLineSphere(0.075);
+	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);
+	drawLineCylinder(0.05, 0.1, 0.3);
+
+	glPushMatrix();
+
+	glTranslatef(0.0, 0.0, 0.3);
+	glRotatef(56.25, 1.0, 0.0, 0.0);
+
+	glColor3f(lime.r, lime.g, lime.b);
+	drawLineSphere(0.1);
+	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);
+	drawLineCylinder(0.1, 0.0, 0.5);
+
+	glPopMatrix();
+	glPopMatrix();
+}
+
 void display()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1111,35 +1741,71 @@ void display()
 	glRotatef(ry, 1.0, 0.0, 0.0);
 	glRotatef(rz, 0.0, 0.0, 1.0);
 	
-	if (!weaponSwitch)
+	if (!styleSwitch)
 	{
-		glTranslatef(0.0, -0.5, -0.25);
+		if (!weaponSwitch)
+		{
+			glTranslatef(0.0, -0.5, -0.25);
 
-		neck();
+			neck();
 
-		necklace();
+			necklace();
 
-		faceArmor();
+			faceArmor();
 
-		glPushMatrix();
+			glPushMatrix();
 
-		glRotatef(-5, 1.0, 0.0, 0.0);
+			glRotatef(-5, 1.0, 0.0, 0.0);
 
-		brain();
+			brain();
 
-		topArmor();
+			topArmor();
 
-		corn();
+			corn();
 
-		glPopMatrix();
+			glPopMatrix();
 
-		eyes();
+			eyes();
 
-		mouth();
+			mouth();
+		}
+		else
+		{
+			weapon();
+		}
 	}
 	else
 	{
-		weapon();
+		if (!weaponSwitch)
+		{
+			glTranslatef(0.0, -0.5, -0.25);
+
+			neckLine();
+
+			necklaceLine();
+
+			faceArmorLine();
+
+			glPushMatrix();
+
+			glRotatef(-5, 1.0, 0.0, 0.0);
+
+			brainLine();
+
+			topArmorLine();
+
+			cornLine();
+
+			glPopMatrix();
+
+			eyesLine();
+
+			mouthLine();
+		}
+		else
+		{
+			weapon();
+		}
 	}
 }
 //--------------------------------------------------------------------
