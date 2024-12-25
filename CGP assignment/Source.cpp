@@ -64,7 +64,8 @@ int style_switch;
 GLUquadricObj* obj = NULL;
 
 
-//Color for lwoer body
+
+//Color for lower body
 float colorR = 0, colorG = 0, colorB = 0;
 
 //Rotation for lower body animation
@@ -72,9 +73,10 @@ float waistThighRotation = 0, waistThighMinRotation = -45, waistThighMaxRotation
 float thighCalfRotation = 0, thighCalfMinRotation = -45, thighCalfMaxRotation = 0;
 float calfLegRotation = 0, calfLegMinRotation = -30, calfLegMaxRotation = 30;
 
+//Lower body part translation
 float thightX = 1.75, thighY = -0.25, thighZ = 0;
-float calfX = 1.25, calfY = -7, calfZ = 0;
-float legX = 1.75, legY = -11.75, legZ = 0;
+float calfX = 1.25, calfY = -4.5, calfZ = 0;
+float legX = 1.75, legY = -3.75, legZ = 0;
 float thighTranslationX = 1.75, thighTranslationY = thighY, thighTranslationZ = 0;
 float calfTranslationX = 1.25, calfTranslationY = thighTranslationY + calfY, calfTranslationZ = 0;
 float legTranslationX = 1.75, legTranslationY = calfTranslationY + legY, legTranslationZ = 0;
@@ -125,30 +127,33 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			yaw = 0.0f;                 
 			pitch = 0.0f;
 		}
-		//if (wParam == 'W')
-		//{
-		//	waistThighRotation += 5;
-		//	//thighCalfRotation -= 5;
-		//	//calfLegRotation -= 5;
-		//}
-		//if (wParam == 'S')
-		//{
-		//	waistThighRotation -= 5;
-		//	//thighCalfRotation += 5;
-		//	//calfLegRotation += 5;
-		//}
-		//if (wParam == 'E')
-		//{
-		//	//waistThighRotation += 5;
-		//	thighCalfRotation -= 5;
-		//	//calfLegRotation -= 5;
-		//}
-		//if (wParam == 'D')
-		//{
-		//	//waistThighRotation -= 5;
-		//	thighCalfRotation += 5;
-		//	//calfLegRotation += 5;
-		//}
+
+		//Rotation for lower body
+		if (wParam == 'W')
+		{
+			waistThighRotation += 5;
+		}
+		if (wParam == 'S')
+		{
+			waistThighRotation -= 5;
+		}
+		if (wParam == 'E')
+		{
+			thighCalfRotation += 5;
+		}
+		if (wParam == 'D')
+		{
+			thighCalfRotation -= 5;
+		}
+		if (wParam == 'R')
+		{
+			calfLegRotation += 5;
+		}
+		if (wParam == 'F')
+		{
+			calfLegRotation -= 5;
+		}
+
 		cameraPosition.x = target.x + radius * cos(yaw) * cos(pitch);
 		cameraPosition.y = target.y + radius * sin(pitch);
 		cameraPosition.z = target.z + radius * sin(yaw) * cos(pitch);
@@ -778,51 +783,56 @@ void lowerBodyCalf()
 	//Lower body - calf
 	glPushMatrix();
 
-		glTranslatef(1.75, -7, 0);
+		glTranslatef(1.75, -4.5, 0);
 
-		//Calf upper part
 		glPushMatrix();
-			polygonPlate(6, calfUpperFrontPart, calfUpperBackPart);
-		glPopMatrix();
+			glTranslatef(0, -2.5, 0);
 
-		//Calf upper part and calf shield connection
-		glPushMatrix();
-			glTranslatef(0.75, 0, 0);
-			rect(0.75, 0.2, 0.2, style_gl);
-		glPopMatrix();
-
-		//Calf shield
-		glPushMatrix();
-
-			//Translate to right and rotate
-			glTranslatef(1.5, 0, 0);
-			glRotatef(90, 0, 1, 0);
-
-			//Armor middle part
+			//Calf upper part
 			glPushMatrix();
-			polygonPlate(4, calfArmorMiddleFront, calfArmorMiddleBack);
+				polygonPlate(6, calfUpperFrontPart, calfUpperBackPart);
 			glPopMatrix();
 
-			//Armor right part
+			//Calf upper part and calf shield connection
 			glPushMatrix();
-			glTranslatef(1.4, 0, -0.25);
-			glRotatef(30, 0, 1, 0);
-			polygonPlate(3, calfArmorSideFront, calfArmorSideBack);
+				glTranslatef(0.75, 0, 0);
+				rect(0.75, 0.2, 0.2, style_gl);
 			glPopMatrix();
 
-			//Armor left part
+			//Calf shield
 			glPushMatrix();
-			glTranslatef(-1.4, 0, -0.25);
-			glRotatef(150, 0, 1, 0);
-			polygonPlate(3, calfArmorSideFront, calfArmorSideBack);
+
+				//Translate to right and rotate
+				glTranslatef(1.5, 0, 0);
+				glRotatef(90, 0, 1, 0);
+
+				//Armor middle part
+				glPushMatrix();
+				polygonPlate(4, calfArmorMiddleFront, calfArmorMiddleBack);
+				glPopMatrix();
+
+				//Armor right part
+				glPushMatrix();
+				glTranslatef(1.4, 0, -0.25);
+				glRotatef(30, 0, 1, 0);
+				polygonPlate(3, calfArmorSideFront, calfArmorSideBack);
+				glPopMatrix();
+
+				//Armor left part
+				glPushMatrix();
+				glTranslatef(-1.4, 0, -0.25);
+				glRotatef(150, 0, 1, 0);
+				polygonPlate(3, calfArmorSideFront, calfArmorSideBack);
+				glPopMatrix();
+
 			glPopMatrix();
 
-		glPopMatrix();
+			//Calf lower part
+			glPushMatrix();
+				glTranslatef(-0.5, -3, -0.5);
+				rect(1, 2, 1, style_gl);
+			glPopMatrix();
 
-		//Calf lower part
-		glPushMatrix();
-			glTranslatef(-0.5, -3, -0.5);
-			rect(1, 2, 1, style_gl);
 		glPopMatrix();
 
 	glPopMatrix();
@@ -833,78 +843,63 @@ void lowerBodyLeg()
 	//Lower body - leg
 	glPushMatrix();
 
-	glTranslatef(1.75, -11.75, 0);
-	glRotatef(90, 0, 1, 0);
+		glTranslatef(1.75, -3.75, 0);
+		glRotatef(90, 0, 1, 0);
 
-	//Calf and leg connection
-	glPushMatrix();
-	glTranslatef(-0.4, 0, -0.4);
-	rect(0.8, 2, 0.8, style_gl);
-	glPopMatrix();
+		glPushMatrix();
+			glTranslatef(0, -8, 0);
 
-	//Front leg
-	glPushMatrix();
-	glTranslatef(-2, 0, 0);
-	polygonPlate(4, frontLowerSide1Leg, frontLowerSide2Leg);
-	polygonPlate(3, frontUpperSide1Leg, frontUpperSide2Leg);
-	glPopMatrix();
+			//Calf and leg connection
+			glPushMatrix();
+				glTranslatef(-0.4, 0, -0.4);
+				rect(0.8, 2, 0.8, style_gl);
+			glPopMatrix();
 
-	//Back leg
-	glPushMatrix();
-	glTranslatef(0.75, 0, 0);
-	polygonPlate(5, backSide1Leg, backSide2Leg);
-	glPopMatrix();
+			//Front leg
+			glPushMatrix();
+				glTranslatef(-2, 0, 0);
+				polygonPlate(4, frontLowerSide1Leg, frontLowerSide2Leg);
+				polygonPlate(3, frontUpperSide1Leg, frontUpperSide2Leg);
+			glPopMatrix();
 
-	glPopMatrix();
-}
+			//Back leg
+			glPushMatrix();
+				glTranslatef(0.75, 0, 0);
+				polygonPlate(5, backSide1Leg, backSide2Leg);
+			glPopMatrix();
 
-void debugJoint(float x, float y, float z)
-{
-	glPushMatrix();
-	glTranslatef(x, y, z);
-	sphere(1.5, 10, 10, style_gl);
+		glPopMatrix();
+
 	glPopMatrix();
 }
 
 void lowerBodyLegStructure()
 {
 	glPushMatrix();
-		//glTranslatef(-thighTranslationX, -thighTranslationY, -thighTranslationZ);
+		//Thigh
+		glTranslatef(thighTranslationX, thighTranslationY, thighTranslationZ);
 		glRotatef(waistThighRotation, 1, 0, 0);
-		//glTranslatef(thighTranslationX, thighTranslationY, thighTranslationZ);
+		glTranslatef(-thighTranslationX, -thighTranslationY, -thighTranslationZ);
 		lowerBodyThigh();
 		glPushMatrix();
+			//Knee
 			lowerBodyKnee();
 			glPushMatrix();
-				//glTranslatef(-calfTranslationX, -calfTranslationY, -calfTranslationZ);
+				//Calf
+				glTranslatef(calfTranslationX, calfTranslationY, calfTranslationZ);
 				glRotatef(thighCalfRotation, 1, 0, 0);
-				//glTranslatef(calfTranslationX, calfTranslationY, calfTranslationZ);
+				glTranslatef(-calfTranslationX, -calfTranslationY, -calfTranslationZ);
 				lowerBodyCalf();
 				glPushMatrix();
-					//glTranslatef(-legTranslationX, -legTranslationY, -legTranslationZ);
+					//Leg
+					glTranslatef(legTranslationX, legTranslationY, legTranslationZ);
 					glRotatef(calfLegRotation, 1, 0, 0);
-					//glTranslatef(legTranslationX, legTranslationY, legTranslationZ);
+					glTranslatef(-legTranslationX, -legTranslationY, -legTranslationZ);
 					lowerBodyLeg();
 				glPopMatrix();
 			glPopMatrix();
 		glPopMatrix();
 	glPopMatrix();
-
-	//debugJoint(calfTranslationX, calfTranslationY, calfTranslationZ);
-}
-
-void animateLeg()
-{
-	static float angleIncrement = 0.5f;
-
-	// Update joint angles
-	waistThighRotation += angleIncrement;
-	thighCalfRotation -= angleIncrement * 0.5f;
-	calfLegRotation += angleIncrement * 0.25f;
-
-	// Loop angles for continuous animation
-	if (waistThighRotation > waistThighMaxRotation || waistThighRotation < waistThighMinRotation)
-		angleIncrement = -angleIncrement;
 }
 
 void lowerBody()
@@ -924,8 +919,6 @@ void lowerBody()
 	glScalef(-1, 1, 1);
 	lowerBodyLegStructure();
 	glPopMatrix();
-
-	animateLeg();
 }
 
 void display()
