@@ -20,7 +20,7 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="Box.bmp">
+    <Image Include="waffle.bmp">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
