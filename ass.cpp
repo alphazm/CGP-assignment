@@ -43,6 +43,8 @@ color lime = { 0.0,1.0,0.5 };
 
 GLuint texture;
 
+LPCSTR textureName = NULL, ice = "ice.bmp", box = "Box.bmp";
+
 LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
@@ -117,6 +119,17 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 		else if (wParam == 0x54)		//press t
 		{
 			textureSwitch = !textureSwitch;
+		}
+		else if (wParam == 0x52)
+		{
+			if (textureName == ice)
+			{
+				textureName = box;
+			}
+			else
+			{
+				textureName = ice;
+			}
 		}
 		break;
 
@@ -1419,7 +1432,7 @@ void neck()
 
 	if (textureSwitch)
 	{
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		//inner neck
 		glColor3f(0.18f, 0.18f, 0.18f);		//black-ish grey
@@ -1428,7 +1441,7 @@ void neck()
 		glDeleteTextures(1, &texture);
 		glDisable(GL_TEXTURE_2D);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		//outer neck
 		glColor3f(1.0f, 0.7f, 0.0f);		//golden yellow
@@ -1484,7 +1497,7 @@ void necklace()
 		point.bru.x = -0.575, point.bru.y = 0.1, point.bru.z = 0.15;
 		point.brd.x = -0.55, point.brd.y = 0.09, point.brd.z = 0.15;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
@@ -1498,7 +1511,7 @@ void necklace()
 		point.bru.x = -0.575, point.bru.y = 0.1, point.bru.z = 0.25;
 		point.brd.x = -0.55, point.brd.y = 0.075, point.brd.z = 0.225;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
@@ -1512,7 +1525,7 @@ void necklace()
 		point.bru.x = -0.475, point.bru.y = 0.1, point.bru.z = 0.25;
 		point.brd.x = -0.45, point.brd.y = 0.075, point.brd.z = 0.225;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
@@ -1527,7 +1540,7 @@ void necklace()
 		point.bru.x = -0.35, point.bru.y = 0.125, point.bru.z = 0.15;
 		point.brd.x = -0.35, point.brd.y = 0.1, point.brd.z = 0.125;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
@@ -1542,7 +1555,7 @@ void necklace()
 		another.bru.x = -0.35, another.bru.y = 0.15, another.bru.z = 0;
 		another.brd.x = -0.35, another.brd.y = 0.125, another.brd.z = 0;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(another, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
@@ -1556,7 +1569,7 @@ void necklace()
 		point.bru.x = -0.375, point.bru.y = 0.2, point.bru.z = 0.75;
 		point.brd.x = -0.35, point.brd.y = 0.175, point.brd.z = 0.75;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
@@ -1570,7 +1583,7 @@ void necklace()
 		point.bru.x = -0.325, point.bru.y = 0.3, point.bru.z = 1.0;
 		point.brd.x = -0.3, point.brd.y = 0.275, point.brd.z = 1.0;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
@@ -1584,7 +1597,7 @@ void necklace()
 		point.bru.x = 0, point.bru.y = 0.4, point.bru.z = 1.25;
 		point.brd.x = 0, point.brd.y = 0.375, point.brd.z = 1.25;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
@@ -1602,7 +1615,7 @@ void necklace()
 		point.bru.x = 0.575, point.bru.y = 0.1, point.bru.z = 0.15;
 		point.brd.x = 0.55, point.brd.y = 0.09, point.brd.z = 0.15;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
@@ -1616,7 +1629,7 @@ void necklace()
 		point.bru.x = 0.575, point.bru.y = 0.1, point.bru.z = 0.25;
 		point.brd.x = 0.55, point.brd.y = 0.075, point.brd.z = 0.225;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
@@ -1630,7 +1643,7 @@ void necklace()
 		point.bru.x = 0.475, point.bru.y = 0.1, point.bru.z = 0.25;
 		point.brd.x = 0.45, point.brd.y = 0.075, point.brd.z = 0.225;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
@@ -1645,7 +1658,7 @@ void necklace()
 		point.bru.x = 0.35, point.bru.y = 0.125, point.bru.z = 0.15;
 		point.brd.x = 0.35, point.brd.y = 0.1, point.brd.z = 0.125;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
@@ -1660,7 +1673,7 @@ void necklace()
 		another.bru.x = 0.35, another.bru.y = 0.15, another.bru.z = 0;
 		another.brd.x = 0.35, another.brd.y = 0.125, another.brd.z = 0;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(another, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
@@ -1674,7 +1687,7 @@ void necklace()
 		point.bru.x = 0.375, point.bru.y = 0.2, point.bru.z = 0.75;
 		point.brd.x = 0.35, point.brd.y = 0.175, point.brd.z = 0.75;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
@@ -1688,7 +1701,7 @@ void necklace()
 		point.bru.x = 0.325, point.bru.y = 0.3, point.bru.z = 1.0;
 		point.brd.x = 0.3, point.brd.y = 0.275, point.brd.z = 1.0;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
@@ -1702,7 +1715,7 @@ void necklace()
 		point.bru.x = 0, point.bru.y = 0.4, point.bru.z = 1.25;
 		point.brd.x = 0, point.brd.y = 0.375, point.brd.z = 1.25;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
@@ -1720,7 +1733,7 @@ void necklace()
 		point.bru.x = -0.325, point.bru.y = 0.375, point.bru.z = 0.1;
 		point.brd.x = -0.3, point.brd.y = 0.15, point.brd.z = 0.1;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, lime, lime, lime, lime, lime, lime, textureSwitch, texture);
 
@@ -1738,7 +1751,7 @@ void necklace()
 		point.bru.x = 0.325, point.bru.y = 0.375, point.bru.z = 0.1;
 		point.brd.x = 0.3, point.brd.y = 0.15, point.brd.z = 0.1;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, lime, lime, lime, lime, lime, lime, textureSwitch, texture);
 
@@ -1756,7 +1769,7 @@ void necklace()
 		point.bru.x = -0.6, point.bru.y = 0.25, point.bru.z = 0.1;
 		point.brd.x = -0.6, point.brd.y = 0.2, point.brd.z = 0.1;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, lime, lime, lime, lime, lime, lime, textureSwitch, texture);
 
@@ -1774,7 +1787,7 @@ void necklace()
 		point.bru.x = 0.6, point.bru.y = 0.25, point.bru.z = 0.1;
 		point.brd.x = 0.6, point.brd.y = 0.2, point.brd.z = 0.1;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, lime, lime, lime, lime, lime, lime, textureSwitch, texture);
 
@@ -2214,7 +2227,7 @@ void brain()
 
 	if (textureSwitch)
 	{
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		glColor3f(0.8, 0.8, 0.8);		//white-ish grey
 		drawSphere(0.25);
@@ -2254,7 +2267,7 @@ void faceArmor()
 		glTranslatef(0.0, 0.3, -0.1);
 		glRotatef(-90, 1.0, 0.0, 0.0);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 		
 		glColor3f(purple.r, purple.g, purple.b);		//purple
 		drawHalfCylinder(0.3, 0.5, 0.1);
@@ -2270,7 +2283,7 @@ void faceArmor()
 		glTranslatef(0.0, 0.4, -0.1);
 		glRotatef(-90, 1.0, 0.0, 0.0);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark purple
 		drawHalfCylinder(0.5, 0.3, 0.1);
@@ -2293,7 +2306,7 @@ void faceArmor()
 		point.bru.x = -0.3, point.bru.y = 0.55, point.bru.z = 0.1;
 		point.brd.x = -0.3, point.brd.y = 0.45, point.brd.z = 0.1;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
@@ -2311,7 +2324,7 @@ void faceArmor()
 		point.bru.x = 0.3, point.bru.y = 0.55, point.bru.z = 0.1;
 		point.brd.x = 0.3, point.brd.y = 0.45, point.brd.z = 0.1;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple,
 			textureSwitch, texture);
@@ -2439,7 +2452,7 @@ void topArmor()
 
 		glTranslatef(0.0, 0.575, 0.45);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		glColor3f(purple.r, purple.g, purple.b);		//purple
 		drawHalfCylinder(0.3, 0.25, 0.5);
@@ -2451,7 +2464,7 @@ void topArmor()
 
 		glTranslatef(0.0, 0.0, 0.5);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		glColor3f(purple.r, purple.g, purple.b);		//purple
 		drawHalfCylinder(0.25, 0.1, 0.2);
@@ -2463,7 +2476,7 @@ void topArmor()
 
 		glTranslatef(0.0, 0.0, 0.2);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		glColor3f(purple.r, purple.g, purple.b);		//purple
 		drawHalfCylinder(0.1, 0.0, 0.05);
@@ -2480,7 +2493,7 @@ void topArmor()
 
 		glTranslatef(0.0, 0.575, -0.05);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		glColor3f(purple.r, purple.g, purple.b);		//purple
 		drawHalfCylinder(0.2, 0.25, 0.6);
@@ -2492,7 +2505,7 @@ void topArmor()
 
 		glTranslatef(0.0, 0.0, -0.2);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		glColor3f(purple.r, purple.g, purple.b);		//purple
 		drawHalfCylinder(0.1, 0.2, 0.2);
@@ -2504,7 +2517,7 @@ void topArmor()
 
 		glTranslatef(0.0, 0.0, -0.05);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		glColor3f(purple.r, purple.g, purple.b);		//purple
 		drawHalfCylinder(0.0, 0.1, 0.05);
@@ -2521,7 +2534,7 @@ void topArmor()
 
 		glTranslatef(0.0, 0.575, 0.5);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		glColor3f(black.r, black.g, black.b);		//black
 		drawHalfCylinder(0.0, 0.2825, 0.0);
@@ -2544,7 +2557,7 @@ void topArmor()
 		point.bru.x = -0.275, point.bru.y = 0.65, point.bru.z = 0.55;
 		point.brd.x = -0.3, point.brd.y = 0.4, point.brd.z = 0.35;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
@@ -2562,7 +2575,7 @@ void topArmor()
 		point.bru.x = 0.3, point.bru.y = 0.65, point.bru.z = 0.55;
 		point.brd.x = 0.325, point.brd.y = 0.4, point.brd.z = 0.35;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple,
 			textureSwitch, texture);
@@ -2769,7 +2782,7 @@ void eyes()
 		point.bru.x = -0.1, point.bru.y = 0.65, point.bru.z = 0.15;
 		point.brd.x = -0.1, point.brd.y = 0.4, point.brd.z = 0.15;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, black, black, black, black, black, black, textureSwitch, texture);
 
@@ -2788,7 +2801,7 @@ void eyes()
 		point.bru.x = -0.1125, point.bru.y = 0.625, point.bru.z = -0.1;
 		point.brd.x = -0.2125, point.brd.y = 0.525, point.brd.z = -0.1;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, white, white, white, white, white, white, textureSwitch, texture);
 
@@ -2806,7 +2819,7 @@ void eyes()
 		point.bru.x = 0.1, point.bru.y = 0.65, point.bru.z = 0.15;
 		point.brd.x = 0.1, point.brd.y = 0.4, point.brd.z = 0.15;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, black, black, black, black, black, black, textureSwitch, texture);
 
@@ -2825,7 +2838,7 @@ void eyes()
 		point.bru.x = 0.1125, point.bru.y = 0.625, point.bru.z = -0.1;
 		point.brd.x = 0.2125, point.brd.y = 0.525, point.brd.z = -0.1;
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		fourPointIrregularShape(point, true, false, materialSwitch, white, white, white, white, white, white, textureSwitch, texture);
 
@@ -2838,7 +2851,7 @@ void eyes()
 		glTranslatef(0.0, 0.4, 0.0);
 		glRotatef(-90, 1.0, 0.0, 0.0);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		glColor3f(purple.r, purple.g, purple.b);		//purple
 		drawHalfCylinder(0.5, 0.1, 0.2);
@@ -2854,7 +2867,7 @@ void eyes()
 		glTranslatef(0.0, 0.4, -0.2);
 		glRotatef(-90, 1.0, 0.0, 0.0);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		glColor3f(purple.r, purple.g, purple.b);		//purple
 		drawHalfCylinder(0.35, 0.0, 0.2);
@@ -3038,7 +3051,7 @@ void mouth()
 		glTranslatef(0.0, -0.1, -0.1);
 		glRotatef(-90, 1.0, 0.0, 0.0);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		glColor3f(0.8, 0.8, 0.8);		//white-ish, grey
 		drawHalfCylinder(0.0, 0.3, 0.4);
@@ -3085,7 +3098,7 @@ void corn()
 		glTranslatef(0.0, 0.6, -0.2);
 		glRotatef(250.0, 1.0, 0.0, 0.0);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark purple
 		drawCylinder(0.05, 0.025, 0.75);
@@ -3097,7 +3110,7 @@ void corn()
 
 		glTranslatef(0.0, 0.0, 0.1875);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		glColor3f(lime.r, lime.g, lime.b);		//lime
 		drawCylinder(0.05, 0.05, 0.1875);
@@ -3111,7 +3124,7 @@ void corn()
 
 		glTranslatef(0.0, 0.0, 0.75);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		glColor3f(purple.r, purple.g, purple.b);		//purple
 		drawCylinder(0.025, 0.0, 0.0);
@@ -3196,7 +3209,7 @@ void weapon()
 		glTranslatef(0.0, -0.9, 0.0);
 		glRotatef(-90, 1.0, 0.0, 0.0);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		glColor3f(lime.r, lime.g, lime.b);		//lime
 		drawCylinder(0.0, 0.1, 0.15);
@@ -3212,7 +3225,7 @@ void weapon()
 		glTranslatef(0.0, -0.75, 0.0);
 		glRotatef(-90, 1.0, 0.0, 0.0);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		glColor3f(lime.r, lime.g, lime.b);		//lime
 		drawCylinder(0.1, 0.0, 0.15);
@@ -3228,7 +3241,7 @@ void weapon()
 		glTranslatef(0.0, -0.7, 0.0);
 		glRotatef(-90, 1.0, 0.0, 0.0);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		glColor3f(purple.r, purple.g, purple.b);		//purple
 		drawCylinder(0.05, 0.05, 0.8);
@@ -3244,7 +3257,7 @@ void weapon()
 		glRotatef(-90, 0.0, 1.0, 0.0);
 		glRotatef(-45, 1.0, 0.0, 0.0);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		glColor3f(lime.r, lime.g, lime.b);		//lime
 		drawSphere(0.075);
@@ -3259,7 +3272,7 @@ void weapon()
 		glTranslatef(0.0, 0.0, 0.3);
 		glRotatef(-56.25, 1.0, 0.0, 0.0);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		glColor3f(lime.r, lime.g, lime.b);		//lime
 		drawSphere(0.1);
@@ -3278,7 +3291,7 @@ void weapon()
 		glRotatef(-90, 0.0, 1.0, 0.0);
 		glRotatef(-135, 1.0, 0.0, 0.0);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		glColor3f(lime.r, lime.g, lime.b);		//lime
 		drawSphere(0.075);
@@ -3293,7 +3306,7 @@ void weapon()
 		glTranslatef(0.0, 0.0, 0.3);
 		glRotatef(56.25, 1.0, 0.0, 0.0);
 
-		texture = LoadTexture("ice.bmp");
+		texture = LoadTexture(textureName);
 
 		glColor3f(lime.r, lime.g, lime.b);		//lime
 		drawSphere(0.1);
