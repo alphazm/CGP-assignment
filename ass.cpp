@@ -27,13 +27,21 @@ struct fourIrregularPoint
 	position flu, fld, fru, frd, blu, bld, bru, brd;
 };
 
+int  lightSwitch = 0, materialSwitch = 0;
+
 float rx = 0.0, ry = 0.0, rz = 0.0, rs = 1.0;
 
-bool weaponSwitch = false, styleSwitch = false;
+float lightPos[] = { 1.0,1.0,1.0 };
 
+bool weaponSwitch = false, styleSwitch = false, textureSwitch = false;
+
+color red = { 1.0,0.0,0.0 }, green = { 0.0,1.0,0.0 }, blue = { 0.0,0.0,1.0 };
+color yellow = { 1.0,1.0,0.0 }, magenta = { 1.0,0.0,1.0 }, cyan = { 0.0,1.0,1.0 };
 color black = { 0.01,0.01,0.01 }, white = { 0.99,0.99,0.99 };
 color purple = { 0.5,0.0,1.0 }, darkPurple = { 0.25,0.0,0.5 };
 color lime = { 0.0,1.0,0.5 };
+
+GLuint texture;
 
 LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -76,13 +84,39 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 		{
 			rz -= rs;
 		}
-		else if (wParam == 0x43)
+		else if (wParam == 0x43)		//press c
 		{
 			weaponSwitch = !weaponSwitch;
 		}
-		else if (wParam == 0x50)
+		else if (wParam == 0x50)		//press p
 		{
 			styleSwitch = !styleSwitch;
+		}
+		else if (wParam == 0x4C)		//press l
+		{
+			if (lightSwitch < 2)
+			{
+				lightSwitch++;
+			}
+			else
+			{
+				lightSwitch = 0;
+			}
+		}
+		else if (wParam == 0x4D)		//press m
+		{
+			if (materialSwitch < 2)
+			{
+				materialSwitch++;
+			}
+			else
+			{
+				materialSwitch = 0;
+			}
+		}
+		else if (wParam == 0x54)		//press t
+		{
+			textureSwitch = !textureSwitch;
 		}
 		break;
 
@@ -273,11 +307,29 @@ fourIrregularPoint setTToBoPoint(fourIrregularPoint point)
 	return point;
 }
 
+GLuint LoadTexture(LPCSTR filename) {
+	BITMAP BMP;
+	GLuint texture = 0;
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+	HBITMAP hBMP = (HBITMAP)LoadImage(GetModuleHandle(NULL), filename, IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION | LR_LOADFROMFILE);
+	GetObject(hBMP, sizeof(BMP), &BMP);
+	glEnable(GL_TEXTURE_2D);
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, BMP.bmWidth, BMP.bmHeight, 0, GL_BGR_EXT, GL_UNSIGNED_BYTE, BMP.bmBits);
+
+	DeleteObject(hBMP);
+	return texture;
+}
+
 void drawCylinder(float baseR, float topR, float h)
 {
 	GLUquadricObj* cylinder = NULL;		//create quadric obj pointer
 	cylinder = gluNewQuadric();		//create quadric obj in the memory
 	gluQuadricDrawStyle(cylinder, GLU_FILL);
+	gluQuadricTexture(cylinder, textureSwitch);		//change texture if need
 	gluCylinder(cylinder, baseR, topR, h, 30, 30);
 	gluDeleteQuadric(cylinder);
 }
@@ -296,19 +348,40 @@ void drawHalfCylinder(float baseR, float topR, float length, float numSteps = 30
 	float a = 0.0f;
 	float step = /*6.2831852*/ 3.1415926 / numSteps;
 
-	glBegin(GL_TRIANGLE_STRIP);
-	for (int i = 0; i <= numSteps; ++i)
+	if (textureSwitch)
 	{
-		float x = (float)cos(a) * baseR;
-		float y = (float)sin(a) * baseR;
-		glVertex3f(x, y, 0.0f);
+		glBegin(GL_TRIANGLE_STRIP);
+		for (int i = 0; i <= numSteps; ++i)
+		{
+			float x = (float)cos(a) * baseR;
+			float y = (float)sin(a) * baseR;
+			glTexCoord2f(i / numSteps, 0.0);
+			glVertex3f(x, y, 0.0f);
 
-		x = (float)cos(a) * topR;
-		y = (float)sin(a) * topR;
-		glVertex3f(x, y, length);
-		a += step;
+			x = (float)cos(a) * topR;
+			y = (float)sin(a) * topR;
+			glTexCoord2f(i / numSteps, length);
+			glVertex3f(x, y, length);
+			a += step;
+		}
+		glEnd();
 	}
-	glEnd();
+	else
+	{
+		glBegin(GL_TRIANGLE_STRIP);
+		for (int i = 0; i <= numSteps; ++i)
+		{
+			float x = (float)cos(a) * baseR;
+			float y = (float)sin(a) * baseR;
+			glVertex3f(x, y, 0.0f);
+
+			x = (float)cos(a) * topR;
+			y = (float)sin(a) * topR;
+			glVertex3f(x, y, length);
+			a += step;
+		}
+		glEnd();
+	}
 }
 
 void drawHalfLineCylinder(float baseR, float topR, float length, float numSteps = 30)
@@ -336,7 +409,7 @@ void drawSphere(float radius)
 	GLUquadricObj* sphere = NULL;		//create quadric obj pointer
 	sphere = gluNewQuadric();		//create quadric obj in the memory
 	gluQuadricDrawStyle(sphere, GLU_FILL);		//change to full color or draw line
-	gluQuadricTexture(sphere, false);		//disable texture
+	gluQuadricTexture(sphere, textureSwitch);		//change texture if need
 	gluSphere(sphere, radius, 30, 10);		//draw a sphere
 	gluDeleteQuadric(sphere);
 }
@@ -346,182 +419,993 @@ void drawLineSphere(float radius)
 	GLUquadricObj* sphere = NULL;		//create quadric obj pointer
 	sphere = gluNewQuadric();		//create quadric obj in the memory
 	gluQuadricDrawStyle(sphere, GLU_LINE);		//change to full color or draw line
-	gluQuadricTexture(sphere, false);		//disable texture
 	gluSphere(sphere, radius, 30, 10);		//draw a sphere
 	gluDeleteQuadric(sphere);
 }
 
-void drawDisk(float inr, float outr, float slices = 30, float loops = 30)
-{
-	GLUquadricObj* disk = gluNewQuadric();
-	gluQuadricDrawStyle(disk, GLU_FILL);
-	gluDisk(disk, inr, outr, slices, loops);
-	gluDeleteQuadric(disk);
-}
-
-void drawLineDisk(float inr, float outr, float slices = 30, float loops = 30)
-{
-	GLUquadricObj* disk = gluNewQuadric();
-	gluQuadricDrawStyle(disk, GLU_LINE);
-	gluDisk(disk, inr, outr, slices, loops);
-	gluDeleteQuadric(disk);
-}
-
-void fourPointIrregularShape(fourIrregularPoint point, bool fill = true, bool oriColor = true,
+void fourPointIrregularShape(fourIrregularPoint point, bool fill = true, bool oriColor = true, int mat = 0,
 	color fC = { 0.9,0.9,0.9 }, color rC = { 0.9,0.9,0.9 }, color boC = { 0.9,0.9,0.9 },
-	color lC = { 0.9,0.9,0.9 }, color uC = { 0.9,0.9,0.9 }, color baC = { 0.9,0.9,0.9 })
+	color lC = { 0.9,0.9,0.9 }, color uC = { 0.9,0.9,0.9 }, color baC = { 0.9,0.9,0.9 }, bool tex = false,
+	GLuint texture = NULL)
 {
-	if (oriColor)
+	if (fill)
 	{
-		if (fill)
+		glBegin(GL_QUADS);
+
+		if (oriColor && mat == 0 && !tex)
 		{
-			glBegin(GL_QUADS);
+			//front
+			glColor3f(red.r, red.g, red.b);		//red
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+
+			//right
+			glColor3f(green.r, green.g, green.b);		//green
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+
+			//bottom
+			glColor3f(blue.r, blue.g, blue.b);		//blue
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+
+			//left
+			glColor3f(yellow.r, yellow.g, yellow.b);		//yellow
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+
+			//up
+			glColor3f(magenta.r, magenta.g, magenta.b);		//magenta
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+
+			//back
+			glColor3f(cyan.r, cyan.g, cyan.b);		//cyan
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
 		}
-		else
+		else if (oriColor && mat == 1 && !tex)
 		{
-			glBegin(GL_LINE_LOOP);
+			float temp[] = {0,0,0};
+
+			//front
+			glColor3f(red.r, red.g, red.b);		//red
+			temp[0] = red.r;
+			temp[1] = red.g;
+			temp[2] = red.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+
+			//right
+			glColor3f(green.r, green.g, green.b);		//green
+			temp[0] = green.r;
+			temp[1] = green.g;
+			temp[2] = green.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+
+			//bottom
+			glColor3f(blue.r, blue.g, blue.b);		//blue
+			temp[0] = blue.r;
+			temp[1] = blue.g;
+			temp[2] = blue.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+
+			//left
+			glColor3f(yellow.r, yellow.g, yellow.b);		//yellow
+			temp[0] = yellow.r;
+			temp[1] = yellow.g;
+			temp[2] = yellow.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+
+			//up
+			glColor3f(magenta.r, magenta.g, magenta.b);		//magenta
+			temp[0] = magenta.r;
+			temp[1] = magenta.g;
+			temp[2] = magenta.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+
+			//back
+			glColor3f(cyan.r, cyan.g, cyan.b);		//cyan
+			temp[0] = cyan.r;
+			temp[1] = cyan.g;
+			temp[2] = cyan.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
 		}
+		else if (oriColor && mat == 2 && !tex)
+		{
+			float temp[] = { 0,0,0 };
 
-		//front
-		glColor3f(1.0, 0.0, 0.0);		//red
-		glVertex3f(point.fld.x, point.fld.y, point.fld.z);
-		glVertex3f(point.flu.x, point.flu.y, point.flu.z);
-		glVertex3f(point.fru.x, point.fru.y, point.fru.z);
-		glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			//front
+			glColor3f(red.r, red.g, red.b);		//red
+			temp[0] = red.r;
+			temp[1] = red.g;
+			temp[2] = red.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
 
-		//right
-		glColor3f(0.0, 1.0, 0.0);		//green
-		glVertex3f(point.frd.x, point.frd.y, point.frd.z);
-		glVertex3f(point.fru.x, point.fru.y, point.fru.z);
-		glVertex3f(point.bru.x, point.bru.y, point.bru.z);
-		glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			//right
+			glColor3f(green.r, green.g, green.b);		//green
+			temp[0] = green.r;
+			temp[1] = green.g;
+			temp[2] = green.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
 
-		//bottom
-		glColor3f(0.0, 0.0, 1.0);		//blue
-		glVertex3f(point.brd.x, point.brd.y, point.brd.z);
-		glVertex3f(point.frd.x, point.frd.y, point.frd.z);
-		glVertex3f(point.fld.x, point.fld.y, point.fld.z);
-		glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			//bottom
+			glColor3f(blue.r, blue.g, blue.b);		//blue
+			temp[0] = blue.r;
+			temp[1] = blue.g;
+			temp[2] = blue.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
 
-		//left
-		glColor3f(1.0, 1.0, 0.0);		//yellow
-		glVertex3f(point.bld.x, point.bld.y, point.bld.z);
-		glVertex3f(point.fld.x, point.fld.y, point.fld.z);
-		glVertex3f(point.flu.x, point.flu.y, point.flu.z);
-		glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+			//left
+			glColor3f(yellow.r, yellow.g, yellow.b);		//yellow
+			temp[0] = yellow.r;
+			temp[1] = yellow.g;
+			temp[2] = yellow.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
 
-		//up
-		glColor3f(1.0, 0.0, 1.0);		//magenta
-		glVertex3f(point.blu.x, point.blu.y, point.blu.z);
-		glVertex3f(point.flu.x, point.flu.y, point.flu.z);
-		glVertex3f(point.fru.x, point.fru.y, point.fru.z);
-		glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			//up
+			glColor3f(magenta.r, magenta.g, magenta.b);		//magenta
+			temp[0] = magenta.r;
+			temp[1] = magenta.g;
+			temp[2] = magenta.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
 
-		//back
-		glColor3f(0.0, 1.0, 1.0);		//lime
-		glVertex3f(point.bru.x, point.bru.y, point.bru.z);
-		glVertex3f(point.brd.x, point.brd.y, point.brd.z);
-		glVertex3f(point.bld.x, point.bld.y, point.bld.z);
-		glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+			//back
+			glColor3f(cyan.r, cyan.g, cyan.b);		//cyan
+			temp[0] = cyan.r;
+			temp[1] = cyan.g;
+			temp[2] = cyan.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+		}
+		else if (oriColor && mat == 0 && tex)
+		{
+			//front
+			glColor3f(red.r, red.g, red.b);		//red
+			glTexCoord2f(0, 0);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
 
-		glEnd();
+			//right
+			glColor3f(green.r, green.g, green.b);		//green
+			glTexCoord2f(0, 0);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+
+			//bottom
+			glColor3f(blue.r, blue.g, blue.b);		//blue
+			glTexCoord2f(0, 0);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+
+			//left
+			glColor3f(yellow.r, yellow.g, yellow.b);		//yellow
+			glTexCoord2f(0, 0);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+
+			//up
+			glColor3f(magenta.r, magenta.g, magenta.b);		//magenta
+			glTexCoord2f(0, 0);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+
+			//back
+			glColor3f(cyan.r, cyan.g, cyan.b);		//cyan
+			glTexCoord2f(0, 0);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+		}
+		else if (oriColor && mat == 1 && tex)
+		{
+			float temp[] = { 0,0,0 };
+
+			//front
+			glColor3f(red.r, red.g, red.b);		//red
+			temp[0] = red.r;
+			temp[1] = red.g;
+			temp[2] = red.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+
+			//right
+			glColor3f(green.r, green.g, green.b);		//green
+			temp[0] = green.r;
+			temp[1] = green.g;
+			temp[2] = green.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+
+			//bottom
+			glColor3f(blue.r, blue.g, blue.b);		//blue
+			temp[0] = blue.r;
+			temp[1] = blue.g;
+			temp[2] = blue.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+
+			//left
+			glColor3f(yellow.r, yellow.g, yellow.b);		//yellow
+			temp[0] = yellow.r;
+			temp[1] = yellow.g;
+			temp[2] = yellow.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+
+			//up
+			glColor3f(magenta.r, magenta.g, magenta.b);		//magenta
+			temp[0] = magenta.r;
+			temp[1] = magenta.g;
+			temp[2] = magenta.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+
+			//back
+			glColor3f(cyan.r, cyan.g, cyan.b);		//cyan
+			temp[0] = cyan.r;
+			temp[1] = cyan.g;
+			temp[2] = cyan.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+		}
+		else if (oriColor && mat == 2 && tex)
+		{
+			float temp[] = { 0,0,0 };
+
+			//front
+			glColor3f(red.r, red.g, red.b);		//red
+			temp[0] = red.r;
+			temp[1] = red.g;
+			temp[2] = red.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+
+			//right
+			glColor3f(green.r, green.g, green.b);		//green
+			temp[0] = green.r;
+			temp[1] = green.g;
+			temp[2] = green.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+
+			//bottom
+			glColor3f(blue.r, blue.g, blue.b);		//blue
+			temp[0] = blue.r;
+			temp[1] = blue.g;
+			temp[2] = blue.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+
+			//left
+			glColor3f(yellow.r, yellow.g, yellow.b);		//yellow
+			temp[0] = yellow.r;
+			temp[1] = yellow.g;
+			temp[2] = yellow.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+
+			//up
+			glColor3f(magenta.r, magenta.g, magenta.b);		//magenta
+			temp[0] = magenta.r;
+			temp[1] = magenta.g;
+			temp[2] = magenta.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+
+			//back
+			glColor3f(cyan.r, cyan.g, cyan.b);		//cyan
+			temp[0] = cyan.r;
+			temp[1] = cyan.g;
+			temp[2] = cyan.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+		}
+		else if (!oriColor && mat == 0 && !tex)
+		{
+			//front
+			glColor3f(fC.r, fC.g, fC.b);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+
+			//right
+			glColor3f(rC.r, rC.g, rC.b);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+
+			//bottom
+			glColor3f(boC.r, boC.g, boC.b);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+
+			//left
+			glColor3f(lC.r, lC.g, lC.b);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+
+			//up
+			glColor3f(uC.r, uC.g, uC.b);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+
+			//back
+			glColor3f(baC.r, baC.g, baC.b);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+		}
+		else if (!oriColor && mat == 1 && !tex)
+		{
+			float temp[] = { 0,0,0 };
+
+			//front
+			glColor3f(fC.r, fC.g, fC.b);
+			temp[0] = fC.r;
+			temp[1] = fC.g;
+			temp[2] = fC.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+
+			//right
+			glColor3f(rC.r, rC.g, rC.b);
+			temp[0] = rC.r;
+			temp[1] = rC.g;
+			temp[2] = rC.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+
+			//bottom
+			glColor3f(boC.r, boC.g, boC.b);
+			temp[0] = boC.r;
+			temp[1] = boC.g;
+			temp[2] = boC.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+
+			//left
+			glColor3f(lC.r, lC.g, lC.b);
+			temp[0] = lC.r;
+			temp[1] = lC.g;
+			temp[2] = lC.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+
+			//up
+			glColor3f(uC.r, uC.g, uC.b);
+			temp[0] = uC.r;
+			temp[1] = uC.g;
+			temp[2] = uC.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+
+			//back
+			glColor3f(baC.r, baC.g, baC.b);
+			temp[0] = baC.r;
+			temp[1] = baC.g;
+			temp[2] = baC.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+		}
+		else if (!oriColor && mat == 2 && !tex)
+		{
+			float temp[] = { 0,0,0 };
+
+			//front
+			glColor3f(fC.r, fC.g, fC.b);
+			temp[0] = fC.r;
+			temp[1] = fC.g;
+			temp[2] = fC.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+
+			//right
+			glColor3f(rC.r, rC.g, rC.b);
+			temp[0] = rC.r;
+			temp[1] = rC.g;
+			temp[2] = rC.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+
+			//bottom
+			glColor3f(boC.r, boC.g, boC.b);
+			temp[0] = boC.r;
+			temp[1] = boC.g;
+			temp[2] = boC.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+
+			//left
+			glColor3f(lC.r, lC.g, lC.b);
+			temp[0] = lC.r;
+			temp[1] = lC.g;
+			temp[2] = lC.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+
+			//up
+			glColor3f(uC.r, uC.g, uC.b);
+			temp[0] = uC.r;
+			temp[1] = uC.g;
+			temp[2] = uC.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+
+			//back
+			glColor3f(baC.r, baC.g, baC.b);
+			temp[0] = baC.r;
+			temp[1] = baC.g;
+			temp[2] = baC.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+		}
+		else if (!oriColor && mat == 0 && tex)
+		{
+			//front
+			glColor3f(fC.r, fC.g, fC.b);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+
+			//right
+			glColor3f(rC.r, rC.g, rC.b);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+
+			//bottom
+			glColor3f(boC.r, boC.g, boC.b);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+
+			//left
+			glColor3f(lC.r, lC.g, lC.b);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+
+			//up
+			glColor3f(uC.r, uC.g, uC.b);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+
+			//back
+			glColor3f(baC.r, baC.g, baC.b);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+		}
+		else if (!oriColor && mat == 1 && tex)
+		{
+			float temp[] = { 0,0,0 };
+
+			//front
+			glColor3f(fC.r, fC.g, fC.b);
+			temp[0] = fC.r;
+			temp[1] = fC.g;
+			temp[2] = fC.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+
+			//right
+			glColor3f(rC.r, rC.g, rC.b);
+			temp[0] = rC.r;
+			temp[1] = rC.g;
+			temp[2] = rC.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+
+			//bottom
+			glColor3f(boC.r, boC.g, boC.b);
+			temp[0] = boC.r;
+			temp[1] = boC.g;
+			temp[2] = boC.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+
+			//left
+			glColor3f(lC.r, lC.g, lC.b);
+			temp[0] = lC.r;
+			temp[1] = lC.g;
+			temp[2] = lC.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+
+			//up
+			glColor3f(uC.r, uC.g, uC.b);
+			temp[0] = uC.r;
+			temp[1] = uC.g;
+			temp[2] = uC.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+
+			//back
+			glColor3f(baC.r, baC.g, baC.b);
+			temp[0] = baC.r;
+			temp[1] = baC.g;
+			temp[2] = baC.b;
+			glMaterialfv(GL_FRONT, GL_AMBIENT, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+		}
+		else if (!oriColor && mat == 2 && tex)
+		{
+			float temp[] = { 0,0,0 };
+
+			//front
+			glColor3f(fC.r, fC.g, fC.b);
+			temp[0] = fC.r;
+			temp[1] = fC.g;
+			temp[2] = fC.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+
+			//right
+			glColor3f(rC.r, rC.g, rC.b);
+			temp[0] = rC.r;
+			temp[1] = rC.g;
+			temp[2] = rC.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+
+			//bottom
+			glColor3f(boC.r, boC.g, boC.b);
+			temp[0] = boC.r;
+			temp[1] = boC.g;
+			temp[2] = boC.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+
+			//left
+			glColor3f(lC.r, lC.g, lC.b);
+			temp[0] = lC.r;
+			temp[1] = lC.g;
+			temp[2] = lC.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+
+			//up
+			glColor3f(uC.r, uC.g, uC.b);
+			temp[0] = uC.r;
+			temp[1] = uC.g;
+			temp[2] = uC.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+
+			//back
+			glColor3f(baC.r, baC.g, baC.b);
+			temp[0] = baC.r;
+			temp[1] = baC.g;
+			temp[2] = baC.b;
+			glMaterialfv(GL_FRONT, GL_DIFFUSE, temp);
+			glTexCoord2f(0, 0);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glTexCoord2f(1, 0);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glTexCoord2f(1, 1);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glTexCoord2f(0, 1);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+		}
 	}
 	else
 	{
-		if (fill)
+		if (oriColor)
 		{
-			glBegin(GL_QUADS);
+			glBegin(GL_LINE_LOOP);
+
+			//front
+			glColor3f(red.r, red.g, red.b);		//red
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+
+			//right
+			glColor3f(green.r, green.g, green.b);		//green
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+
+			//bottom
+			glColor3f(blue.r, blue.g, blue.b);		//blue
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+
+			//left
+			glColor3f(yellow.r, yellow.g, yellow.b);		//yellow
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+
+			//up
+			glColor3f(magenta.r, magenta.g, magenta.b);		//magenta
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+
+			//back
+			glColor3f(cyan.r, cyan.g, cyan.b);		//cyan
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
 		}
 		else
 		{
-			glBegin(GL_LINE_LOOP);
+			//front
+			glColor3f(fC.r, fC.g, fC.b);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+
+			//right
+			glColor3f(rC.r, rC.g, rC.b);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+
+			//bottom
+			glColor3f(boC.r, boC.g, boC.b);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+
+			//left
+			glColor3f(lC.r, lC.g, lC.b);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+
+			//up
+			glColor3f(uC.r, uC.g, uC.b);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+
+			//back
+			glColor3f(baC.r, baC.g, baC.b);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
 		}
-
-		//front
-		glColor3f(fC.r, fC.g, fC.b);
-		glVertex3f(point.fld.x, point.fld.y, point.fld.z);
-		glVertex3f(point.flu.x, point.flu.y, point.flu.z);
-		glVertex3f(point.fru.x, point.fru.y, point.fru.z);
-		glVertex3f(point.frd.x, point.frd.y, point.frd.z);
-
-		//right
-		glColor3f(rC.r, rC.g, rC.b);
-		glVertex3f(point.frd.x, point.frd.y, point.frd.z);
-		glVertex3f(point.fru.x, point.fru.y, point.fru.z);
-		glVertex3f(point.bru.x, point.bru.y, point.bru.z);
-		glVertex3f(point.brd.x, point.brd.y, point.brd.z);
-
-		//bottom
-		glColor3f(boC.r, boC.g, boC.b);
-		glVertex3f(point.brd.x, point.brd.y, point.brd.z);
-		glVertex3f(point.frd.x, point.frd.y, point.frd.z);
-		glVertex3f(point.fld.x, point.fld.y, point.fld.z);
-		glVertex3f(point.bld.x, point.bld.y, point.bld.z);
-
-		//left
-		glColor3f(lC.r, lC.g, lC.b);
-		glVertex3f(point.bld.x, point.bld.y, point.bld.z);
-		glVertex3f(point.fld.x, point.fld.y, point.fld.z);
-		glVertex3f(point.flu.x, point.flu.y, point.flu.z);
-		glVertex3f(point.blu.x, point.blu.y, point.blu.z);
-
-		//up
-		glColor3f(uC.r, uC.g, uC.b);
-		glVertex3f(point.blu.x, point.blu.y, point.blu.z);
-		glVertex3f(point.flu.x, point.flu.y, point.flu.z);
-		glVertex3f(point.fru.x, point.fru.y, point.fru.z);
-		glVertex3f(point.bru.x, point.bru.y, point.bru.z);
-
-		//back
-		glColor3f(baC.r, baC.g, baC.b);
-		glVertex3f(point.bru.x, point.bru.y, point.bru.z);
-		glVertex3f(point.brd.x, point.brd.y, point.brd.z);
-		glVertex3f(point.bld.x, point.bld.y, point.bld.z);
-		glVertex3f(point.blu.x, point.blu.y, point.blu.z);
-
-		glEnd();
 	}
-}
-
-void drawCube(float size)
-{
-	glBegin(GL_QUADS);
-	//Face 1: Bottom
-	glColor3f(1.0f, 0.0f, 0.0f);
-	glVertex3f(0.0f, 0.0f, size);
-	glVertex3f(size, 0.0f, size);
-	glVertex3f(size, 0.0f, 0.0f);
-	glVertex3f(0.0f, 0.0f, 0.0f);
-	//Face 2 : Left
-	glColor3f(0.0f, 1.0f, 0.0f);
-	glVertex3f(0.0f, 0.0f, 0.0f);
-	glVertex3f(0.0f, size, 0.0f);
-	glVertex3f(0.0f, size, size);
-	glVertex3f(0.0f, 0.0f, size);
-	//Face 3 : Front
-	glColor3f(0.0f, 0.0f, 1.0f);
-	glVertex3f(0.0f, 0.0f, size);
-	glVertex3f(0.0f, size, size);
-	glVertex3f(size, size, size);
-	glVertex3f(size, 0.0f, size);
-	//Face 4 : Right
-	glColor3f(1.0f, 1.0f, 0.0f);
-	glVertex3f(size, 0.0f, size);
-	glVertex3f(size, size, size);
-	glVertex3f(size, size, 0.0f);
-	glVertex3f(size, 0.0f, 0.0f);
-	//Face 5 : Back
-	glColor3f(0.0f, 1.0f, 1.0f);
-	glVertex3f(size, 0.0f, 0.0f);
-	glVertex3f(0.0f, 0.0f, 0.0f);
-	glVertex3f(0.0f, size, 0.0f);
-	glVertex3f(size, size, 0.0f);
-	//Face 6 : Top
-	glColor3f(1.0f, 0.0f, 1.0f);
-	glVertex3f(size, size, 0.0f);
-	glVertex3f(0.0f, size, 0.0f);
-	glVertex3f(0.0f, size, size);
-	glVertex3f(size, size, size);
 
 	glEnd();
 }
@@ -533,13 +1417,36 @@ void neck()
 	glTranslatef(0.0, 0.0, 0.3);
 	glRotatef(-135, 1.0, 0.0, 0.0);
 
-	//inner neck
-	glColor3f(0.18f, 0.18f, 0.18f);		//black-ish grey
-	drawCylinder(0.2, 0.1, 0.2);
+	if (textureSwitch)
+	{
+		texture = LoadTexture("ice.bmp");
 
-	//outer neck
-	glColor3f(1.0f, 0.7f, 0.0f);		//golden yellow
-	drawHalfCylinder(0.2, 0.175, 0.2, 30);
+		//inner neck
+		glColor3f(0.18f, 0.18f, 0.18f);		//black-ish grey
+		drawCylinder(0.2, 0.1, 0.2);
+
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+
+		texture = LoadTexture("ice.bmp");
+
+		//outer neck
+		glColor3f(1.0f, 0.7f, 0.0f);		//golden yellow
+		drawHalfCylinder(0.2, 0.175, 0.2, 30);
+
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+	}
+	else
+	{
+		//inner neck
+		glColor3f(0.18f, 0.18f, 0.18f);		//black-ish grey
+		drawCylinder(0.2, 0.1, 0.2);
+
+		//outer neck
+		glColor3f(1.0f, 0.7f, 0.0f);		//golden yellow
+		drawHalfCylinder(0.2, 0.175, 0.2, 30);
+	}
 
 	glPopMatrix();
 }
@@ -563,214 +1470,528 @@ void neckLine()
 
 void necklace()
 {
-	fourIrregularPoint point, another;
+	if (textureSwitch)
+	{
+		fourIrregularPoint point, another;
 
-	point.fld.x = -0.75, point.fld.y = -0.1, point.fld.z = 0;
-	point.flu.x = -0.75, point.flu.y = -0.01, point.flu.z = 0;
-	point.fru.x = -0.575, point.fru.y = 0.1, point.fru.z = 0;
-	point.frd.x = -0.55, point.frd.y = 0.09, point.frd.z = 0;
+		point.fld.x = -0.75, point.fld.y = -0.1, point.fld.z = 0;
+		point.flu.x = -0.75, point.flu.y = -0.01, point.flu.z = 0;
+		point.fru.x = -0.575, point.fru.y = 0.1, point.fru.z = 0;
+		point.frd.x = -0.55, point.frd.y = 0.09, point.frd.z = 0;
 
-	point.bld.x = -0.825, point.bld.y = -0.15, point.bld.z = 0.15;
-	point.blu.x = -0.825, point.blu.y = -0.03, point.blu.z = 0.15;
-	point.bru.x = -0.575, point.bru.y = 0.1, point.bru.z = 0.15;
-	point.brd.x = -0.55, point.brd.y = 0.09, point.brd.z = 0.15;
+		point.bld.x = -0.825, point.bld.y = -0.15, point.bld.z = 0.15;
+		point.blu.x = -0.825, point.blu.y = -0.03, point.blu.z = 0.15;
+		point.bru.x = -0.575, point.bru.y = 0.1, point.bru.z = 0.15;
+		point.brd.x = -0.55, point.brd.y = 0.09, point.brd.z = 0.15;
 
-	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+		texture = LoadTexture("ice.bmp");
 
-	point = setBaToFPoint(point);
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
-	point.bld.x = -0.775, point.bld.y = -0.15, point.bld.z = 0.4;
-	point.blu.x = -0.775, point.blu.y = -0.03, point.blu.z = 0.4;
-	point.bru.x = -0.575, point.bru.y = 0.1, point.bru.z = 0.25;
-	point.brd.x = -0.55, point.brd.y = 0.075, point.brd.z = 0.225;
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+		point = setBaToFPoint(point);
 
-	point = setBaToFPoint(point);
+		point.bld.x = -0.775, point.bld.y = -0.15, point.bld.z = 0.4;
+		point.blu.x = -0.775, point.blu.y = -0.03, point.blu.z = 0.4;
+		point.bru.x = -0.575, point.bru.y = 0.1, point.bru.z = 0.25;
+		point.brd.x = -0.55, point.brd.y = 0.075, point.brd.z = 0.225;
 
-	point.bld.x = -0.7, point.bld.y = -0.15, point.bld.z = 0.5;
-	point.blu.x = -0.675, point.blu.y = -0.03, point.blu.z = 0.5;
-	point.bru.x = -0.475, point.bru.y = 0.1, point.bru.z = 0.25;
-	point.brd.x = -0.45, point.brd.y = 0.075, point.brd.z = 0.225;
+		texture = LoadTexture("ice.bmp");
 
-	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
-	//joint
-	point = setBaToFPoint(point);
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	point.bld.x = -0.375, point.bld.y = 0.1, point.bld.z = 0.5;
-	point.blu.x = -0.375, point.blu.y = 0.125, point.blu.z = 0.5;
-	point.bru.x = -0.35, point.bru.y = 0.125, point.bru.z = 0.15;
-	point.brd.x = -0.35, point.brd.y = 0.1, point.brd.z = 0.125;
+		point = setBaToFPoint(point);
 
-	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+		point.bld.x = -0.7, point.bld.y = -0.15, point.bld.z = 0.5;
+		point.blu.x = -0.675, point.blu.y = -0.03, point.blu.z = 0.5;
+		point.bru.x = -0.475, point.bru.y = 0.1, point.bru.z = 0.25;
+		point.brd.x = -0.45, point.brd.y = 0.075, point.brd.z = 0.225;
 
-	another = setRToBaPoint(point);
+		texture = LoadTexture("ice.bmp");
 
-	//front to back view, we are in -z view to +z view
-	another.bld.x = -0.5, another.bld.y = 0.15, another.bld.z = 0;
-	another.blu.x = -0.475, another.blu.y = 0.175, another.blu.z = 0;
-	another.bru.x = -0.35, another.bru.y = 0.15, another.bru.z = 0;
-	another.brd.x = -0.35, another.brd.y = 0.125, another.brd.z = 0;
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
-	fourPointIrregularShape(another, true, false, purple, purple, purple, purple, purple, purple);
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	point = setLToFPoint(point);
+		//joint
+		point = setBaToFPoint(point);
 
-	point.bld.x = -0.7, point.bld.y = -0.05, point.bld.z = 0.75;
-	point.blu.x = -0.675, point.blu.y = 0.07, point.blu.z = 0.75;
-	point.bru.x = -0.375, point.bru.y = 0.2, point.bru.z = 0.75;
-	point.brd.x = -0.35, point.brd.y = 0.175, point.brd.z = 0.75;
+		point.bld.x = -0.375, point.bld.y = 0.1, point.bld.z = 0.5;
+		point.blu.x = -0.375, point.blu.y = 0.125, point.blu.z = 0.5;
+		point.bru.x = -0.35, point.bru.y = 0.125, point.bru.z = 0.15;
+		point.brd.x = -0.35, point.brd.y = 0.1, point.brd.z = 0.125;
 
-	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+		texture = LoadTexture("ice.bmp");
 
-	point = setBaToFPoint(point);
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
-	point.bld.x = -0.575, point.bld.y = 0.05, point.bld.z = 1.375;
-	point.blu.x = -0.55, point.blu.y = 0.17, point.blu.z = 1.375;
-	point.bru.x = -0.325, point.bru.y = 0.3, point.bru.z = 1.0;
-	point.brd.x = -0.3, point.brd.y = 0.275, point.brd.z = 1.0;
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+		another = setRToBaPoint(point);
 
-	point = setBaToFPoint(point);
+		//front to back view, we are in -z view to +z view
+		another.bld.x = -0.5, another.bld.y = 0.15, another.bld.z = 0;
+		another.blu.x = -0.475, another.blu.y = 0.175, another.blu.z = 0;
+		another.bru.x = -0.35, another.bru.y = 0.15, another.bru.z = 0;
+		another.brd.x = -0.35, another.brd.y = 0.125, another.brd.z = 0;
 
-	point.bld.x = 0, point.bld.y = 0.15, point.bld.z = 1.675;
-	point.blu.x = 0, point.blu.y = 0.27, point.blu.z = 1.675;
-	point.bru.x = 0, point.bru.y = 0.4, point.bru.z = 1.25;
-	point.brd.x = 0, point.brd.y = 0.375, point.brd.z = 1.25;
+		texture = LoadTexture("ice.bmp");
 
-	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+		fourPointIrregularShape(another, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
-	//just mirror the left side
-	point.fld.x = 0.75, point.fld.y = -0.1, point.fld.z = 0;
-	point.flu.x = 0.75, point.flu.y = -0.01, point.flu.z = 0;
-	point.fru.x = 0.575, point.fru.y = 0.1, point.fru.z = 0;
-	point.frd.x = 0.55, point.frd.y = 0.09, point.frd.z = 0;
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	point.bld.x = 0.825, point.bld.y = -0.15, point.bld.z = 0.15;
-	point.blu.x = 0.825, point.blu.y = -0.03, point.blu.z = 0.15;
-	point.bru.x = 0.575, point.bru.y = 0.1, point.bru.z = 0.15;
-	point.brd.x = 0.55, point.brd.y = 0.09, point.brd.z = 0.15;
+		point = setLToFPoint(point);
 
-	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+		point.bld.x = -0.7, point.bld.y = -0.05, point.bld.z = 0.75;
+		point.blu.x = -0.675, point.blu.y = 0.07, point.blu.z = 0.75;
+		point.bru.x = -0.375, point.bru.y = 0.2, point.bru.z = 0.75;
+		point.brd.x = -0.35, point.brd.y = 0.175, point.brd.z = 0.75;
 
-	point = setBaToFPoint(point);
+		texture = LoadTexture("ice.bmp");
 
-	point.bld.x = 0.775, point.bld.y = -0.15, point.bld.z = 0.4;
-	point.blu.x = 0.775, point.blu.y = -0.03, point.blu.z = 0.4;
-	point.bru.x = 0.575, point.bru.y = 0.1, point.bru.z = 0.25;
-	point.brd.x = 0.55, point.brd.y = 0.075, point.brd.z = 0.225;
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
-	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	point = setBaToFPoint(point);
+		point = setBaToFPoint(point);
 
-	point.bld.x = 0.7, point.bld.y = -0.15, point.bld.z = 0.5;
-	point.blu.x = 0.675, point.blu.y = -0.03, point.blu.z = 0.5;
-	point.bru.x = 0.475, point.bru.y = 0.1, point.bru.z = 0.25;
-	point.brd.x = 0.45, point.brd.y = 0.075, point.brd.z = 0.225;
+		point.bld.x = -0.575, point.bld.y = 0.05, point.bld.z = 1.375;
+		point.blu.x = -0.55, point.blu.y = 0.17, point.blu.z = 1.375;
+		point.bru.x = -0.325, point.bru.y = 0.3, point.bru.z = 1.0;
+		point.brd.x = -0.3, point.brd.y = 0.275, point.brd.z = 1.0;
 
-	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+		texture = LoadTexture("ice.bmp");
 
-	//joint
-	point = setBaToFPoint(point);
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
-	point.bld.x = 0.375, point.bld.y = 0.1, point.bld.z = 0.5;
-	point.blu.x = 0.375, point.blu.y = 0.125, point.blu.z = 0.5;
-	point.bru.x = 0.35, point.bru.y = 0.125, point.bru.z = 0.15;
-	point.brd.x = 0.35, point.brd.y = 0.1, point.brd.z = 0.125;
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+		point = setBaToFPoint(point);
 
-	another = setRToBaPoint(point);
+		point.bld.x = 0, point.bld.y = 0.15, point.bld.z = 1.675;
+		point.blu.x = 0, point.blu.y = 0.27, point.blu.z = 1.675;
+		point.bru.x = 0, point.bru.y = 0.4, point.bru.z = 1.25;
+		point.brd.x = 0, point.brd.y = 0.375, point.brd.z = 1.25;
 
-	//front to back view, we are in -z view to +z view
-	another.bld.x = 0.5, another.bld.y = 0.15, another.bld.z = 0;
-	another.blu.x = 0.475, another.blu.y = 0.175, another.blu.z = 0;
-	another.bru.x = 0.35, another.bru.y = 0.15, another.bru.z = 0;
-	another.brd.x = 0.35, another.brd.y = 0.125, another.brd.z = 0;
+		texture = LoadTexture("ice.bmp");
 
-	fourPointIrregularShape(another, true, false, purple, purple, purple, purple, purple, purple);
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
-	point = setLToFPoint(point);
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	point.bld.x = 0.7, point.bld.y = -0.05, point.bld.z = 0.75;
-	point.blu.x = 0.675, point.blu.y = 0.07, point.blu.z = 0.75;
-	point.bru.x = 0.375, point.bru.y = 0.2, point.bru.z = 0.75;
-	point.brd.x = 0.35, point.brd.y = 0.175, point.brd.z = 0.75;
+		//just mirror the left side
+		point.fld.x = 0.75, point.fld.y = -0.1, point.fld.z = 0;
+		point.flu.x = 0.75, point.flu.y = -0.01, point.flu.z = 0;
+		point.fru.x = 0.575, point.fru.y = 0.1, point.fru.z = 0;
+		point.frd.x = 0.55, point.frd.y = 0.09, point.frd.z = 0;
 
-	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+		point.bld.x = 0.825, point.bld.y = -0.15, point.bld.z = 0.15;
+		point.blu.x = 0.825, point.blu.y = -0.03, point.blu.z = 0.15;
+		point.bru.x = 0.575, point.bru.y = 0.1, point.bru.z = 0.15;
+		point.brd.x = 0.55, point.brd.y = 0.09, point.brd.z = 0.15;
 
-	point = setBaToFPoint(point);
+		texture = LoadTexture("ice.bmp");
 
-	point.bld.x = 0.575, point.bld.y = 0.05, point.bld.z = 1.375;
-	point.blu.x = 0.55, point.blu.y = 0.17, point.blu.z = 1.375;
-	point.bru.x = 0.325, point.bru.y = 0.3, point.bru.z = 1.0;
-	point.brd.x = 0.3, point.brd.y = 0.275, point.brd.z = 1.0;
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
-	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	point = setBaToFPoint(point);
+		point = setBaToFPoint(point);
 
-	point.bld.x = 0, point.bld.y = 0.15, point.bld.z = 1.675;
-	point.blu.x = 0, point.blu.y = 0.27, point.blu.z = 1.675;
-	point.bru.x = 0, point.bru.y = 0.4, point.bru.z = 1.25;
-	point.brd.x = 0, point.brd.y = 0.375, point.brd.z = 1.25;
+		point.bld.x = 0.775, point.bld.y = -0.15, point.bld.z = 0.4;
+		point.blu.x = 0.775, point.blu.y = -0.03, point.blu.z = 0.4;
+		point.bru.x = 0.575, point.bru.y = 0.1, point.bru.z = 0.25;
+		point.brd.x = 0.55, point.brd.y = 0.075, point.brd.z = 0.225;
 
-	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+		texture = LoadTexture("ice.bmp");
 
-	//the left turbo
-	point.fld.x = -0.6, point.fld.y = 0.075, point.fld.z = -0.1;
-	point.flu.x = -0.625, point.flu.y = 0.25, point.flu.z = -0.1;
-	point.fru.x = -0.325, point.fru.y = 0.375, point.fru.z = -0.1;
-	point.frd.x = -0.3, point.frd.y = 0.15, point.frd.z = -0.1;
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
-	point.bld.x = -0.6, point.bld.y = 0.075, point.bld.z = 0.1;
-	point.blu.x = -0.625, point.blu.y = 0.25, point.blu.z = 0.1;
-	point.bru.x = -0.325, point.bru.y = 0.375, point.bru.z = 0.1;
-	point.brd.x = -0.3, point.brd.y = 0.15, point.brd.z = 0.1;
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	fourPointIrregularShape(point, true, false, lime, lime, lime, lime, lime, lime);
+		point = setBaToFPoint(point);
 
-	//the right turbo
-	point.fld.x = 0.6, point.fld.y = 0.075, point.fld.z = -0.1;
-	point.flu.x = 0.625, point.flu.y = 0.25, point.flu.z = -0.1;
-	point.fru.x = 0.325, point.fru.y = 0.375, point.fru.z = -0.1;
-	point.frd.x = 0.3, point.frd.y = 0.15, point.frd.z = -0.1;
+		point.bld.x = 0.7, point.bld.y = -0.15, point.bld.z = 0.5;
+		point.blu.x = 0.675, point.blu.y = -0.03, point.blu.z = 0.5;
+		point.bru.x = 0.475, point.bru.y = 0.1, point.bru.z = 0.25;
+		point.brd.x = 0.45, point.brd.y = 0.075, point.brd.z = 0.225;
 
-	point.bld.x = 0.6, point.bld.y = 0.075, point.bld.z = 0.1;
-	point.blu.x = 0.625, point.blu.y = 0.25, point.blu.z = 0.1;
-	point.bru.x = 0.325, point.bru.y = 0.375, point.bru.z = 0.1;
-	point.brd.x = 0.3, point.brd.y = 0.15, point.brd.z = 0.1;
+		texture = LoadTexture("ice.bmp");
 
-	fourPointIrregularShape(point, true, false, lime, lime, lime, lime, lime, lime);
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
-	//left turbo wing
-	point.fld.x = -0.9, point.fld.y = 0.1, point.fld.z = -0.1;
-	point.flu.x = -0.9, point.flu.y = 0.125, point.flu.z = -0.1;
-	point.fru.x = -0.6, point.fru.y = 0.25, point.fru.z = -0.1;
-	point.frd.x = -0.6, point.frd.y = 0.2, point.frd.z = -0.1;
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	point.bld.x = -0.9, point.bld.y = 0.1, point.bld.z = 0.1;
-	point.blu.x = -0.9, point.blu.y = 0.125, point.blu.z = 0.1;
-	point.bru.x = -0.6, point.bru.y = 0.25, point.bru.z = 0.1;
-	point.brd.x = -0.6, point.brd.y = 0.2, point.brd.z = 0.1;
+		//joint
+		point = setBaToFPoint(point);
 
-	fourPointIrregularShape(point, true, false, lime, lime, lime, lime, lime, lime);
+		point.bld.x = 0.375, point.bld.y = 0.1, point.bld.z = 0.5;
+		point.blu.x = 0.375, point.blu.y = 0.125, point.blu.z = 0.5;
+		point.bru.x = 0.35, point.bru.y = 0.125, point.bru.z = 0.15;
+		point.brd.x = 0.35, point.brd.y = 0.1, point.brd.z = 0.125;
 
-	//right turbo wing
-	point.fld.x = 0.9, point.fld.y = 0.1, point.fld.z = -0.1;
-	point.flu.x = 0.9, point.flu.y = 0.125, point.flu.z = -0.1;
-	point.fru.x = 0.6, point.fru.y = 0.25, point.fru.z = -0.1;
-	point.frd.x = 0.6, point.frd.y = 0.2, point.frd.z = -0.1;
+		texture = LoadTexture("ice.bmp");
 
-	point.bld.x = 0.9, point.bld.y = 0.1, point.bld.z = 0.1;
-	point.blu.x = 0.9, point.blu.y = 0.125, point.blu.z = 0.1;
-	point.bru.x = 0.6, point.bru.y = 0.25, point.bru.z = 0.1;
-	point.brd.x = 0.6, point.brd.y = 0.2, point.brd.z = 0.1;
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
-	fourPointIrregularShape(point, true, false, lime, lime, lime, lime, lime, lime);
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+
+		another = setRToBaPoint(point);
+
+		//front to back view, we are in -z view to +z view
+		another.bld.x = 0.5, another.bld.y = 0.15, another.bld.z = 0;
+		another.blu.x = 0.475, another.blu.y = 0.175, another.blu.z = 0;
+		another.bru.x = 0.35, another.bru.y = 0.15, another.bru.z = 0;
+		another.brd.x = 0.35, another.brd.y = 0.125, another.brd.z = 0;
+
+		texture = LoadTexture("ice.bmp");
+
+		fourPointIrregularShape(another, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
+
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+
+		point = setLToFPoint(point);
+
+		point.bld.x = 0.7, point.bld.y = -0.05, point.bld.z = 0.75;
+		point.blu.x = 0.675, point.blu.y = 0.07, point.blu.z = 0.75;
+		point.bru.x = 0.375, point.bru.y = 0.2, point.bru.z = 0.75;
+		point.brd.x = 0.35, point.brd.y = 0.175, point.brd.z = 0.75;
+
+		texture = LoadTexture("ice.bmp");
+
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
+
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+
+		point = setBaToFPoint(point);
+
+		point.bld.x = 0.575, point.bld.y = 0.05, point.bld.z = 1.375;
+		point.blu.x = 0.55, point.blu.y = 0.17, point.blu.z = 1.375;
+		point.bru.x = 0.325, point.bru.y = 0.3, point.bru.z = 1.0;
+		point.brd.x = 0.3, point.brd.y = 0.275, point.brd.z = 1.0;
+
+		texture = LoadTexture("ice.bmp");
+
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
+
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+
+		point = setBaToFPoint(point);
+
+		point.bld.x = 0, point.bld.y = 0.15, point.bld.z = 1.675;
+		point.blu.x = 0, point.blu.y = 0.27, point.blu.z = 1.675;
+		point.bru.x = 0, point.bru.y = 0.4, point.bru.z = 1.25;
+		point.brd.x = 0, point.brd.y = 0.375, point.brd.z = 1.25;
+
+		texture = LoadTexture("ice.bmp");
+
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
+
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+
+		//the left turbo
+		point.fld.x = -0.6, point.fld.y = 0.075, point.fld.z = -0.1;
+		point.flu.x = -0.625, point.flu.y = 0.25, point.flu.z = -0.1;
+		point.fru.x = -0.325, point.fru.y = 0.375, point.fru.z = -0.1;
+		point.frd.x = -0.3, point.frd.y = 0.15, point.frd.z = -0.1;
+
+		point.bld.x = -0.6, point.bld.y = 0.075, point.bld.z = 0.1;
+		point.blu.x = -0.625, point.blu.y = 0.25, point.blu.z = 0.1;
+		point.bru.x = -0.325, point.bru.y = 0.375, point.bru.z = 0.1;
+		point.brd.x = -0.3, point.brd.y = 0.15, point.brd.z = 0.1;
+
+		texture = LoadTexture("ice.bmp");
+
+		fourPointIrregularShape(point, true, false, materialSwitch, lime, lime, lime, lime, lime, lime, textureSwitch, texture);
+
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+
+		//the right turbo
+		point.fld.x = 0.6, point.fld.y = 0.075, point.fld.z = -0.1;
+		point.flu.x = 0.625, point.flu.y = 0.25, point.flu.z = -0.1;
+		point.fru.x = 0.325, point.fru.y = 0.375, point.fru.z = -0.1;
+		point.frd.x = 0.3, point.frd.y = 0.15, point.frd.z = -0.1;
+
+		point.bld.x = 0.6, point.bld.y = 0.075, point.bld.z = 0.1;
+		point.blu.x = 0.625, point.blu.y = 0.25, point.blu.z = 0.1;
+		point.bru.x = 0.325, point.bru.y = 0.375, point.bru.z = 0.1;
+		point.brd.x = 0.3, point.brd.y = 0.15, point.brd.z = 0.1;
+
+		texture = LoadTexture("ice.bmp");
+
+		fourPointIrregularShape(point, true, false, materialSwitch, lime, lime, lime, lime, lime, lime, textureSwitch, texture);
+
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+
+		//left turbo wing
+		point.fld.x = -0.9, point.fld.y = 0.1, point.fld.z = -0.1;
+		point.flu.x = -0.9, point.flu.y = 0.125, point.flu.z = -0.1;
+		point.fru.x = -0.6, point.fru.y = 0.25, point.fru.z = -0.1;
+		point.frd.x = -0.6, point.frd.y = 0.2, point.frd.z = -0.1;
+
+		point.bld.x = -0.9, point.bld.y = 0.1, point.bld.z = 0.1;
+		point.blu.x = -0.9, point.blu.y = 0.125, point.blu.z = 0.1;
+		point.bru.x = -0.6, point.bru.y = 0.25, point.bru.z = 0.1;
+		point.brd.x = -0.6, point.brd.y = 0.2, point.brd.z = 0.1;
+
+		texture = LoadTexture("ice.bmp");
+
+		fourPointIrregularShape(point, true, false, materialSwitch, lime, lime, lime, lime, lime, lime, textureSwitch, texture);
+
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+
+		//right turbo wing
+		point.fld.x = 0.9, point.fld.y = 0.1, point.fld.z = -0.1;
+		point.flu.x = 0.9, point.flu.y = 0.125, point.flu.z = -0.1;
+		point.fru.x = 0.6, point.fru.y = 0.25, point.fru.z = -0.1;
+		point.frd.x = 0.6, point.frd.y = 0.2, point.frd.z = -0.1;
+
+		point.bld.x = 0.9, point.bld.y = 0.1, point.bld.z = 0.1;
+		point.blu.x = 0.9, point.blu.y = 0.125, point.blu.z = 0.1;
+		point.bru.x = 0.6, point.bru.y = 0.25, point.bru.z = 0.1;
+		point.brd.x = 0.6, point.brd.y = 0.2, point.brd.z = 0.1;
+
+		texture = LoadTexture("ice.bmp");
+
+		fourPointIrregularShape(point, true, false, materialSwitch, lime, lime, lime, lime, lime, lime, textureSwitch, texture);
+
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+	}
+	else
+	{
+		fourIrregularPoint point, another;
+
+		point.fld.x = -0.75, point.fld.y = -0.1, point.fld.z = 0;
+		point.flu.x = -0.75, point.flu.y = -0.01, point.flu.z = 0;
+		point.fru.x = -0.575, point.fru.y = 0.1, point.fru.z = 0;
+		point.frd.x = -0.55, point.frd.y = 0.09, point.frd.z = 0;
+
+		point.bld.x = -0.825, point.bld.y = -0.15, point.bld.z = 0.15;
+		point.blu.x = -0.825, point.blu.y = -0.03, point.blu.z = 0.15;
+		point.bru.x = -0.575, point.bru.y = 0.1, point.bru.z = 0.15;
+		point.brd.x = -0.55, point.brd.y = 0.09, point.brd.z = 0.15;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple);
+
+		point = setBaToFPoint(point);
+
+		point.bld.x = -0.775, point.bld.y = -0.15, point.bld.z = 0.4;
+		point.blu.x = -0.775, point.blu.y = -0.03, point.blu.z = 0.4;
+		point.bru.x = -0.575, point.bru.y = 0.1, point.bru.z = 0.25;
+		point.brd.x = -0.55, point.brd.y = 0.075, point.brd.z = 0.225;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple);
+
+		point = setBaToFPoint(point);
+
+		point.bld.x = -0.7, point.bld.y = -0.15, point.bld.z = 0.5;
+		point.blu.x = -0.675, point.blu.y = -0.03, point.blu.z = 0.5;
+		point.bru.x = -0.475, point.bru.y = 0.1, point.bru.z = 0.25;
+		point.brd.x = -0.45, point.brd.y = 0.075, point.brd.z = 0.225;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple);
+
+		//joint
+		point = setBaToFPoint(point);
+
+		point.bld.x = -0.375, point.bld.y = 0.1, point.bld.z = 0.5;
+		point.blu.x = -0.375, point.blu.y = 0.125, point.blu.z = 0.5;
+		point.bru.x = -0.35, point.bru.y = 0.125, point.bru.z = 0.15;
+		point.brd.x = -0.35, point.brd.y = 0.1, point.brd.z = 0.125;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple);
+
+		another = setRToBaPoint(point);
+
+		//front to back view, we are in -z view to +z view
+		another.bld.x = -0.5, another.bld.y = 0.15, another.bld.z = 0;
+		another.blu.x = -0.475, another.blu.y = 0.175, another.blu.z = 0;
+		another.bru.x = -0.35, another.bru.y = 0.15, another.bru.z = 0;
+		another.brd.x = -0.35, another.brd.y = 0.125, another.brd.z = 0;
+
+		fourPointIrregularShape(another, true, false, materialSwitch, purple, purple, purple, purple, purple, purple);
+
+		point = setLToFPoint(point);
+
+		point.bld.x = -0.7, point.bld.y = -0.05, point.bld.z = 0.75;
+		point.blu.x = -0.675, point.blu.y = 0.07, point.blu.z = 0.75;
+		point.bru.x = -0.375, point.bru.y = 0.2, point.bru.z = 0.75;
+		point.brd.x = -0.35, point.brd.y = 0.175, point.brd.z = 0.75;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple);
+
+		point = setBaToFPoint(point);
+
+		point.bld.x = -0.575, point.bld.y = 0.05, point.bld.z = 1.375;
+		point.blu.x = -0.55, point.blu.y = 0.17, point.blu.z = 1.375;
+		point.bru.x = -0.325, point.bru.y = 0.3, point.bru.z = 1.0;
+		point.brd.x = -0.3, point.brd.y = 0.275, point.brd.z = 1.0;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple);
+
+		point = setBaToFPoint(point);
+
+		point.bld.x = 0, point.bld.y = 0.15, point.bld.z = 1.675;
+		point.blu.x = 0, point.blu.y = 0.27, point.blu.z = 1.675;
+		point.bru.x = 0, point.bru.y = 0.4, point.bru.z = 1.25;
+		point.brd.x = 0, point.brd.y = 0.375, point.brd.z = 1.25;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple);
+
+		//just mirror the left side
+		point.fld.x = 0.75, point.fld.y = -0.1, point.fld.z = 0;
+		point.flu.x = 0.75, point.flu.y = -0.01, point.flu.z = 0;
+		point.fru.x = 0.575, point.fru.y = 0.1, point.fru.z = 0;
+		point.frd.x = 0.55, point.frd.y = 0.09, point.frd.z = 0;
+
+		point.bld.x = 0.825, point.bld.y = -0.15, point.bld.z = 0.15;
+		point.blu.x = 0.825, point.blu.y = -0.03, point.blu.z = 0.15;
+		point.bru.x = 0.575, point.bru.y = 0.1, point.bru.z = 0.15;
+		point.brd.x = 0.55, point.brd.y = 0.09, point.brd.z = 0.15;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple);
+
+		point = setBaToFPoint(point);
+
+		point.bld.x = 0.775, point.bld.y = -0.15, point.bld.z = 0.4;
+		point.blu.x = 0.775, point.blu.y = -0.03, point.blu.z = 0.4;
+		point.bru.x = 0.575, point.bru.y = 0.1, point.bru.z = 0.25;
+		point.brd.x = 0.55, point.brd.y = 0.075, point.brd.z = 0.225;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple);
+
+		point = setBaToFPoint(point);
+
+		point.bld.x = 0.7, point.bld.y = -0.15, point.bld.z = 0.5;
+		point.blu.x = 0.675, point.blu.y = -0.03, point.blu.z = 0.5;
+		point.bru.x = 0.475, point.bru.y = 0.1, point.bru.z = 0.25;
+		point.brd.x = 0.45, point.brd.y = 0.075, point.brd.z = 0.225;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple);
+
+		//joint
+		point = setBaToFPoint(point);
+
+		point.bld.x = 0.375, point.bld.y = 0.1, point.bld.z = 0.5;
+		point.blu.x = 0.375, point.blu.y = 0.125, point.blu.z = 0.5;
+		point.bru.x = 0.35, point.bru.y = 0.125, point.bru.z = 0.15;
+		point.brd.x = 0.35, point.brd.y = 0.1, point.brd.z = 0.125;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple);
+
+		another = setRToBaPoint(point);
+
+		//front to back view, we are in -z view to +z view
+		another.bld.x = 0.5, another.bld.y = 0.15, another.bld.z = 0;
+		another.blu.x = 0.475, another.blu.y = 0.175, another.blu.z = 0;
+		another.bru.x = 0.35, another.bru.y = 0.15, another.bru.z = 0;
+		another.brd.x = 0.35, another.brd.y = 0.125, another.brd.z = 0;
+
+		fourPointIrregularShape(another, true, false, materialSwitch, purple, purple, purple, purple, purple, purple);
+
+		point = setLToFPoint(point);
+
+		point.bld.x = 0.7, point.bld.y = -0.05, point.bld.z = 0.75;
+		point.blu.x = 0.675, point.blu.y = 0.07, point.blu.z = 0.75;
+		point.bru.x = 0.375, point.bru.y = 0.2, point.bru.z = 0.75;
+		point.brd.x = 0.35, point.brd.y = 0.175, point.brd.z = 0.75;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple);
+
+		point = setBaToFPoint(point);
+
+		point.bld.x = 0.575, point.bld.y = 0.05, point.bld.z = 1.375;
+		point.blu.x = 0.55, point.blu.y = 0.17, point.blu.z = 1.375;
+		point.bru.x = 0.325, point.bru.y = 0.3, point.bru.z = 1.0;
+		point.brd.x = 0.3, point.brd.y = 0.275, point.brd.z = 1.0;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple);
+
+		point = setBaToFPoint(point);
+
+		point.bld.x = 0, point.bld.y = 0.15, point.bld.z = 1.675;
+		point.blu.x = 0, point.blu.y = 0.27, point.blu.z = 1.675;
+		point.bru.x = 0, point.bru.y = 0.4, point.bru.z = 1.25;
+		point.brd.x = 0, point.brd.y = 0.375, point.brd.z = 1.25;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple);
+
+		//the left turbo
+		point.fld.x = -0.6, point.fld.y = 0.075, point.fld.z = -0.1;
+		point.flu.x = -0.625, point.flu.y = 0.25, point.flu.z = -0.1;
+		point.fru.x = -0.325, point.fru.y = 0.375, point.fru.z = -0.1;
+		point.frd.x = -0.3, point.frd.y = 0.15, point.frd.z = -0.1;
+
+		point.bld.x = -0.6, point.bld.y = 0.075, point.bld.z = 0.1;
+		point.blu.x = -0.625, point.blu.y = 0.25, point.blu.z = 0.1;
+		point.bru.x = -0.325, point.bru.y = 0.375, point.bru.z = 0.1;
+		point.brd.x = -0.3, point.brd.y = 0.15, point.brd.z = 0.1;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, lime, lime, lime, lime, lime, lime);
+
+		//the right turbo
+		point.fld.x = 0.6, point.fld.y = 0.075, point.fld.z = -0.1;
+		point.flu.x = 0.625, point.flu.y = 0.25, point.flu.z = -0.1;
+		point.fru.x = 0.325, point.fru.y = 0.375, point.fru.z = -0.1;
+		point.frd.x = 0.3, point.frd.y = 0.15, point.frd.z = -0.1;
+
+		point.bld.x = 0.6, point.bld.y = 0.075, point.bld.z = 0.1;
+		point.blu.x = 0.625, point.blu.y = 0.25, point.blu.z = 0.1;
+		point.bru.x = 0.325, point.bru.y = 0.375, point.bru.z = 0.1;
+		point.brd.x = 0.3, point.brd.y = 0.15, point.brd.z = 0.1;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, lime, lime, lime, lime, lime, lime);
+
+		//left turbo wing
+		point.fld.x = -0.9, point.fld.y = 0.1, point.fld.z = -0.1;
+		point.flu.x = -0.9, point.flu.y = 0.125, point.flu.z = -0.1;
+		point.fru.x = -0.6, point.fru.y = 0.25, point.fru.z = -0.1;
+		point.frd.x = -0.6, point.frd.y = 0.2, point.frd.z = -0.1;
+
+		point.bld.x = -0.9, point.bld.y = 0.1, point.bld.z = 0.1;
+		point.blu.x = -0.9, point.blu.y = 0.125, point.blu.z = 0.1;
+		point.bru.x = -0.6, point.bru.y = 0.25, point.bru.z = 0.1;
+		point.brd.x = -0.6, point.brd.y = 0.2, point.brd.z = 0.1;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, lime, lime, lime, lime, lime, lime);
+
+		//right turbo wing
+		point.fld.x = 0.9, point.fld.y = 0.1, point.fld.z = -0.1;
+		point.flu.x = 0.9, point.flu.y = 0.125, point.flu.z = -0.1;
+		point.fru.x = 0.6, point.fru.y = 0.25, point.fru.z = -0.1;
+		point.frd.x = 0.6, point.frd.y = 0.2, point.frd.z = -0.1;
+
+		point.bld.x = 0.9, point.bld.y = 0.1, point.bld.z = 0.1;
+		point.blu.x = 0.9, point.blu.y = 0.125, point.blu.z = 0.1;
+		point.bru.x = 0.6, point.bru.y = 0.25, point.bru.z = 0.1;
+		point.brd.x = 0.6, point.brd.y = 0.2, point.brd.z = 0.1;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, lime, lime, lime, lime, lime, lime);
+	}
 }
 
 void necklaceLine()
@@ -787,7 +2008,7 @@ void necklaceLine()
 	point.bru.x = -0.575, point.bru.y = 0.1, point.bru.z = 0.15;
 	point.brd.x = -0.55, point.brd.y = 0.09, point.brd.z = 0.15;
 
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
+	fourPointIrregularShape(point, false, false, materialSwitch, purple, purple, purple, purple, purple, purple);
 
 	point = setBaToFPoint(point);
 
@@ -796,7 +2017,7 @@ void necklaceLine()
 	point.bru.x = -0.575, point.bru.y = 0.1, point.bru.z = 0.25;
 	point.brd.x = -0.55, point.brd.y = 0.075, point.brd.z = 0.225;
 
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
+	fourPointIrregularShape(point, false, false, materialSwitch, purple, purple, purple, purple, purple, purple);
 
 	point = setBaToFPoint(point);
 
@@ -805,7 +2026,7 @@ void necklaceLine()
 	point.bru.x = -0.475, point.bru.y = 0.1, point.bru.z = 0.25;
 	point.brd.x = -0.45, point.brd.y = 0.075, point.brd.z = 0.225;
 
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
+	fourPointIrregularShape(point, false, false, materialSwitch, purple, purple, purple, purple, purple, purple);
 
 	//joint
 	point = setBaToFPoint(point);
@@ -815,7 +2036,7 @@ void necklaceLine()
 	point.bru.x = -0.35, point.bru.y = 0.125, point.bru.z = 0.15;
 	point.brd.x = -0.35, point.brd.y = 0.1, point.brd.z = 0.125;
 
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
+	fourPointIrregularShape(point, false, false, materialSwitch, purple, purple, purple, purple, purple, purple);
 
 	another = setRToBaPoint(point);
 
@@ -825,7 +2046,7 @@ void necklaceLine()
 	another.bru.x = -0.35, another.bru.y = 0.15, another.bru.z = 0;
 	another.brd.x = -0.35, another.brd.y = 0.125, another.brd.z = 0;
 
-	fourPointIrregularShape(another, false, false, purple, purple, purple, purple, purple, purple);
+	fourPointIrregularShape(another, false, false, materialSwitch, purple, purple, purple, purple, purple, purple);
 
 	point = setLToFPoint(point);
 
@@ -834,7 +2055,7 @@ void necklaceLine()
 	point.bru.x = -0.375, point.bru.y = 0.2, point.bru.z = 0.75;
 	point.brd.x = -0.35, point.brd.y = 0.175, point.brd.z = 0.75;
 
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
+	fourPointIrregularShape(point, false, false, materialSwitch, purple, purple, purple, purple, purple, purple);
 
 	point = setBaToFPoint(point);
 
@@ -843,7 +2064,7 @@ void necklaceLine()
 	point.bru.x = -0.325, point.bru.y = 0.3, point.bru.z = 1.0;
 	point.brd.x = -0.3, point.brd.y = 0.275, point.brd.z = 1.0;
 
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
+	fourPointIrregularShape(point, false, false, materialSwitch, purple, purple, purple, purple, purple, purple);
 
 	point = setBaToFPoint(point);
 
@@ -852,7 +2073,7 @@ void necklaceLine()
 	point.bru.x = 0, point.bru.y = 0.4, point.bru.z = 1.25;
 	point.brd.x = 0, point.brd.y = 0.375, point.brd.z = 1.25;
 
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
+	fourPointIrregularShape(point, false, false, materialSwitch, purple, purple, purple, purple, purple, purple);
 
 	//just mirror the left side
 	point.fld.x = 0.75, point.fld.y = -0.1, point.fld.z = 0;
@@ -865,7 +2086,7 @@ void necklaceLine()
 	point.bru.x = 0.575, point.bru.y = 0.1, point.bru.z = 0.15;
 	point.brd.x = 0.55, point.brd.y = 0.09, point.brd.z = 0.15;
 
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
+	fourPointIrregularShape(point, false, false, materialSwitch, purple, purple, purple, purple, purple, purple);
 
 	point = setBaToFPoint(point);
 
@@ -874,7 +2095,7 @@ void necklaceLine()
 	point.bru.x = 0.575, point.bru.y = 0.1, point.bru.z = 0.25;
 	point.brd.x = 0.55, point.brd.y = 0.075, point.brd.z = 0.225;
 
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
+	fourPointIrregularShape(point, false, false, materialSwitch, purple, purple, purple, purple, purple, purple);
 
 	point = setBaToFPoint(point);
 
@@ -883,7 +2104,7 @@ void necklaceLine()
 	point.bru.x = 0.475, point.bru.y = 0.1, point.bru.z = 0.25;
 	point.brd.x = 0.45, point.brd.y = 0.075, point.brd.z = 0.225;
 
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
+	fourPointIrregularShape(point, false, false, materialSwitch, purple, purple, purple, purple, purple, purple);
 
 	//joint
 	point = setBaToFPoint(point);
@@ -893,7 +2114,7 @@ void necklaceLine()
 	point.bru.x = 0.35, point.bru.y = 0.125, point.bru.z = 0.15;
 	point.brd.x = 0.35, point.brd.y = 0.1, point.brd.z = 0.125;
 
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
+	fourPointIrregularShape(point, false, false, materialSwitch, purple, purple, purple, purple, purple, purple);
 
 	another = setRToBaPoint(point);
 
@@ -903,7 +2124,7 @@ void necklaceLine()
 	another.bru.x = 0.35, another.bru.y = 0.15, another.bru.z = 0;
 	another.brd.x = 0.35, another.brd.y = 0.125, another.brd.z = 0;
 
-	fourPointIrregularShape(another, false, false, purple, purple, purple, purple, purple, purple);
+	fourPointIrregularShape(another, false, false, materialSwitch, purple, purple, purple, purple, purple, purple);
 
 	point = setLToFPoint(point);
 
@@ -912,7 +2133,7 @@ void necklaceLine()
 	point.bru.x = 0.375, point.bru.y = 0.2, point.bru.z = 0.75;
 	point.brd.x = 0.35, point.brd.y = 0.175, point.brd.z = 0.75;
 
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
+	fourPointIrregularShape(point, false, false, materialSwitch, purple, purple, purple, purple, purple, purple);
 
 	point = setBaToFPoint(point);
 
@@ -921,7 +2142,7 @@ void necklaceLine()
 	point.bru.x = 0.325, point.bru.y = 0.3, point.bru.z = 1.0;
 	point.brd.x = 0.3, point.brd.y = 0.275, point.brd.z = 1.0;
 
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
+	fourPointIrregularShape(point, false, false, materialSwitch, purple, purple, purple, purple, purple, purple);
 
 	point = setBaToFPoint(point);
 
@@ -930,7 +2151,7 @@ void necklaceLine()
 	point.bru.x = 0, point.bru.y = 0.4, point.bru.z = 1.25;
 	point.brd.x = 0, point.brd.y = 0.375, point.brd.z = 1.25;
 
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
+	fourPointIrregularShape(point, false, false, materialSwitch, purple, purple, purple, purple, purple, purple);
 
 	//the left turbo
 	point.fld.x = -0.6, point.fld.y = 0.075, point.fld.z = -0.1;
@@ -943,7 +2164,7 @@ void necklaceLine()
 	point.bru.x = -0.325, point.bru.y = 0.375, point.bru.z = 0.1;
 	point.brd.x = -0.3, point.brd.y = 0.15, point.brd.z = 0.1;
 
-	fourPointIrregularShape(point, false, false, lime, lime, lime, lime, lime, lime);
+	fourPointIrregularShape(point, false, false, materialSwitch, lime, lime, lime, lime, lime, lime);
 
 	//the right turbo
 	point.fld.x = 0.6, point.fld.y = 0.075, point.fld.z = -0.1;
@@ -956,7 +2177,7 @@ void necklaceLine()
 	point.bru.x = 0.325, point.bru.y = 0.375, point.bru.z = 0.1;
 	point.brd.x = 0.3, point.brd.y = 0.15, point.brd.z = 0.1;
 
-	fourPointIrregularShape(point, false, false, lime, lime, lime, lime, lime, lime);
+	fourPointIrregularShape(point, false, false, materialSwitch, lime, lime, lime, lime, lime, lime);
 
 	//left turbo wing
 	point.fld.x = -0.9, point.fld.y = 0.1, point.fld.z = -0.1;
@@ -969,7 +2190,7 @@ void necklaceLine()
 	point.bru.x = -0.6, point.bru.y = 0.25, point.bru.z = 0.1;
 	point.brd.x = -0.6, point.brd.y = 0.2, point.brd.z = 0.1;
 
-	fourPointIrregularShape(point, false, false, lime, lime, lime, lime, lime, lime);
+	fourPointIrregularShape(point, false, false, materialSwitch, lime, lime, lime, lime, lime, lime);
 
 	//right turbo wing
 	point.fld.x = 0.9, point.fld.y = 0.1, point.fld.z = -0.1;
@@ -982,7 +2203,7 @@ void necklaceLine()
 	point.bru.x = 0.6, point.bru.y = 0.25, point.bru.z = 0.1;
 	point.brd.x = 0.6, point.brd.y = 0.2, point.brd.z = 0.1;
 
-	fourPointIrregularShape(point, false, false, lime, lime, lime, lime, lime, lime);
+	fourPointIrregularShape(point, false, false, materialSwitch, lime, lime, lime, lime, lime, lime);
 }
 
 void brain()
@@ -991,9 +2212,21 @@ void brain()
 
 	glTranslatef(0.0, 0.5, 0.675);
 
-	glColor3f(0.8, 0.8, 0.8);		//white-ish grey
+	if (textureSwitch)
+	{
+		texture = LoadTexture("ice.bmp");
 
-	drawSphere(0.25);
+		glColor3f(0.8, 0.8, 0.8);		//white-ish grey
+		drawSphere(0.25);
+
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+	}
+	else
+	{
+		glColor3f(0.8, 0.8, 0.8);		//white-ish grey
+		drawSphere(0.25);
+	}
 
 	glPopMatrix();
 }
@@ -1013,57 +2246,133 @@ void brainLine()
 
 void faceArmor()
 {
-	//lower part
-	glColor3f(purple.r, purple.g, purple.b);		//purple
+	if (textureSwitch)
+	{
+		//lower part
+		glPushMatrix();
+		
+		glTranslatef(0.0, 0.3, -0.1);
+		glRotatef(-90, 1.0, 0.0, 0.0);
 
-	glPushMatrix();
+		texture = LoadTexture("ice.bmp");
+		
+		glColor3f(purple.r, purple.g, purple.b);		//purple
+		drawHalfCylinder(0.3, 0.5, 0.1);
 
-	glTranslatef(0.0, 0.3, -0.1);
-	glRotatef(-90, 1.0, 0.0, 0.0);
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	drawHalfCylinder(0.3, 0.5, 0.1);
+		glPopMatrix();
 
-	glPopMatrix();
+		//upper part
+		glPushMatrix();
 
-	//upper part
-	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark purple
+		glTranslatef(0.0, 0.4, -0.1);
+		glRotatef(-90, 1.0, 0.0, 0.0);
 
-	glPushMatrix();
+		texture = LoadTexture("ice.bmp");
 
-	glTranslatef(0.0, 0.4, -0.1);
-	glRotatef(-90, 1.0, 0.0, 0.0);
+		glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark purple
+		drawHalfCylinder(0.5, 0.3, 0.1);
 
-	drawHalfCylinder(0.5, 0.3, 0.1);
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	glPopMatrix();
+		glPopMatrix();
 
-	fourIrregularPoint point;
+		fourIrregularPoint point;
 
-	//left side extend
-	point.fld.x = -0.3, point.fld.y = 0.3, point.fld.z = -0.1;
-	point.flu.x = -0.5, point.flu.y = 0.4, point.flu.z = -0.1;
-	point.fru.x = -0.3, point.fru.y = 0.5, point.fru.z = -0.1;
-	point.frd.x = -0.3, point.frd.y = 0.4, point.frd.z = -0.1;
+		//left side extend
+		point.fld.x = -0.3, point.fld.y = 0.3, point.fld.z = -0.1;
+		point.flu.x = -0.5, point.flu.y = 0.4, point.flu.z = -0.1;
+		point.fru.x = -0.3, point.fru.y = 0.5, point.fru.z = -0.1;
+		point.frd.x = -0.3, point.frd.y = 0.4, point.frd.z = -0.1;
 
-	point.bld.x = -0.3, point.bld.y = 0.35, point.bld.z = 0.1;
-	point.blu.x = -0.5, point.blu.y = 0.45, point.blu.z = 0.1;
-	point.bru.x = -0.3, point.bru.y = 0.55, point.bru.z = 0.1;
-	point.brd.x = -0.3, point.brd.y = 0.45, point.brd.z = 0.1;
+		point.bld.x = -0.3, point.bld.y = 0.35, point.bld.z = 0.1;
+		point.blu.x = -0.5, point.blu.y = 0.45, point.blu.z = 0.1;
+		point.bru.x = -0.3, point.bru.y = 0.55, point.bru.z = 0.1;
+		point.brd.x = -0.3, point.brd.y = 0.45, point.brd.z = 0.1;
 
-	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+		texture = LoadTexture("ice.bmp");
 
-	//right side extend
-	point.fld.x = 0.3, point.fld.y = 0.3, point.fld.z = -0.1;
-	point.flu.x = 0.5, point.flu.y = 0.4, point.flu.z = -0.1;
-	point.fru.x = 0.3, point.fru.y = 0.5, point.fru.z = -0.1;
-	point.frd.x = 0.3, point.frd.y = 0.4, point.frd.z = -0.1;
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
 
-	point.bld.x = 0.3, point.bld.y = 0.35, point.bld.z = 0.1;
-	point.blu.x = 0.5, point.blu.y = 0.45, point.blu.z = 0.1;
-	point.bru.x = 0.3, point.bru.y = 0.55, point.bru.z = 0.1;
-	point.brd.x = 0.3, point.brd.y = 0.45, point.brd.z = 0.1;
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	fourPointIrregularShape(point, true, false, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple);
+		//right side extend
+		point.fld.x = 0.3, point.fld.y = 0.3, point.fld.z = -0.1;
+		point.flu.x = 0.5, point.flu.y = 0.4, point.flu.z = -0.1;
+		point.fru.x = 0.3, point.fru.y = 0.5, point.fru.z = -0.1;
+		point.frd.x = 0.3, point.frd.y = 0.4, point.frd.z = -0.1;
+
+		point.bld.x = 0.3, point.bld.y = 0.35, point.bld.z = 0.1;
+		point.blu.x = 0.5, point.blu.y = 0.45, point.blu.z = 0.1;
+		point.bru.x = 0.3, point.bru.y = 0.55, point.bru.z = 0.1;
+		point.brd.x = 0.3, point.brd.y = 0.45, point.brd.z = 0.1;
+
+		texture = LoadTexture("ice.bmp");
+
+		fourPointIrregularShape(point, true, false, materialSwitch, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple,
+			textureSwitch, texture);
+
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+	}
+	else
+	{
+		//lower part
+		glColor3f(purple.r, purple.g, purple.b);		//purple
+
+		glPushMatrix();
+
+		glTranslatef(0.0, 0.3, -0.1);
+		glRotatef(-90, 1.0, 0.0, 0.0);
+
+		drawHalfCylinder(0.3, 0.5, 0.1);
+
+		glPopMatrix();
+
+		//upper part
+		glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark purple
+
+		glPushMatrix();
+
+		glTranslatef(0.0, 0.4, -0.1);
+		glRotatef(-90, 1.0, 0.0, 0.0);
+
+		drawHalfCylinder(0.5, 0.3, 0.1);
+
+		glPopMatrix();
+
+		fourIrregularPoint point;
+
+		//left side extend
+		point.fld.x = -0.3, point.fld.y = 0.3, point.fld.z = -0.1;
+		point.flu.x = -0.5, point.flu.y = 0.4, point.flu.z = -0.1;
+		point.fru.x = -0.3, point.fru.y = 0.5, point.fru.z = -0.1;
+		point.frd.x = -0.3, point.frd.y = 0.4, point.frd.z = -0.1;
+
+		point.bld.x = -0.3, point.bld.y = 0.35, point.bld.z = 0.1;
+		point.blu.x = -0.5, point.blu.y = 0.45, point.blu.z = 0.1;
+		point.bru.x = -0.3, point.bru.y = 0.55, point.bru.z = 0.1;
+		point.brd.x = -0.3, point.brd.y = 0.45, point.brd.z = 0.1;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple);
+
+		//right side extend
+		point.fld.x = 0.3, point.fld.y = 0.3, point.fld.z = -0.1;
+		point.flu.x = 0.5, point.flu.y = 0.4, point.flu.z = -0.1;
+		point.fru.x = 0.3, point.fru.y = 0.5, point.fru.z = -0.1;
+		point.frd.x = 0.3, point.frd.y = 0.4, point.frd.z = -0.1;
+
+		point.bld.x = 0.3, point.bld.y = 0.35, point.bld.z = 0.1;
+		point.blu.x = 0.5, point.blu.y = 0.45, point.blu.z = 0.1;
+		point.bru.x = 0.3, point.bru.y = 0.55, point.bru.z = 0.1;
+		point.brd.x = 0.3, point.brd.y = 0.45, point.brd.z = 0.1;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple);
+	}
 }
 
 void faceArmorLine()
@@ -1105,7 +2414,7 @@ void faceArmorLine()
 	point.bru.x = -0.3, point.bru.y = 0.55, point.bru.z = 0.1;
 	point.brd.x = -0.3, point.brd.y = 0.45, point.brd.z = 0.1;
 
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
+	fourPointIrregularShape(point, false, false, materialSwitch, purple, purple, purple, purple, purple, purple);
 
 	//right side extend
 	point.fld.x = 0.3, point.fld.y = 0.3, point.fld.z = -0.1;
@@ -1118,97 +2427,239 @@ void faceArmorLine()
 	point.bru.x = 0.3, point.bru.y = 0.55, point.bru.z = 0.1;
 	point.brd.x = 0.3, point.brd.y = 0.45, point.brd.z = 0.1;
 
-	fourPointIrregularShape(point, false, false, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple);
+	fourPointIrregularShape(point, false, false, materialSwitch, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple);
 }
 
 void topArmor()
 {
-	glColor3f(purple.r, purple.g, purple.b);		//purple
+	if (textureSwitch)
+	{
+		//back piece
+		glPushMatrix();
 
-	//back piece
-	glPushMatrix();
+		glTranslatef(0.0, 0.575, 0.45);
 
-	glTranslatef(0.0, 0.575, 0.45);
+		texture = LoadTexture("ice.bmp");
 
-	drawHalfCylinder(0.3, 0.25, 0.5);
+		glColor3f(purple.r, purple.g, purple.b);		//purple
+		drawHalfCylinder(0.3, 0.25, 0.5);
 
-	glPushMatrix();
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	glTranslatef(0.0, 0.0, 0.5);
+		glPushMatrix();
 
-	drawHalfCylinder(0.25, 0.1, 0.2);
+		glTranslatef(0.0, 0.0, 0.5);
 
-	glPushMatrix();
+		texture = LoadTexture("ice.bmp");
 
-	glTranslatef(0.0, 0.0, 0.2);
+		glColor3f(purple.r, purple.g, purple.b);		//purple
+		drawHalfCylinder(0.25, 0.1, 0.2);
 
-	drawHalfCylinder(0.1, 0.0, 0.05);
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	glPopMatrix();
-	glPopMatrix();
-	glPopMatrix();
+		glPushMatrix();
 
-	//front piece
-	glPushMatrix();
+		glTranslatef(0.0, 0.0, 0.2);
 
-	glTranslatef(0.0, 0.575, -0.05);
+		texture = LoadTexture("ice.bmp");
 
-	drawHalfCylinder(0.2, 0.25, 0.6);
+		glColor3f(purple.r, purple.g, purple.b);		//purple
+		drawHalfCylinder(0.1, 0.0, 0.05);
 
-	glPushMatrix();
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	glTranslatef(0.0, 0.0, -0.2);
+		glPopMatrix();
+		glPopMatrix();
+		glPopMatrix();
 
-	drawHalfCylinder(0.1, 0.2, 0.2);
+		//front piece
+		glPushMatrix();
 
-	glPushMatrix();
+		glTranslatef(0.0, 0.575, -0.05);
 
-	glTranslatef(0.0, 0.0, -0.05);
+		texture = LoadTexture("ice.bmp");
 
-	drawHalfCylinder(0.0, 0.1, 0.05);
+		glColor3f(purple.r, purple.g, purple.b);		//purple
+		drawHalfCylinder(0.2, 0.25, 0.6);
 
-	glPopMatrix();
-	glPopMatrix();
-	glPopMatrix();
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	//the between
-	glPushMatrix();
+		glPushMatrix();
 
-	glTranslatef(0.0, 0.575, 0.5);
+		glTranslatef(0.0, 0.0, -0.2);
 
-	glColor3f(black.r, black.g, black.b);		//black
+		texture = LoadTexture("ice.bmp");
 
-	drawHalfCylinder(0.0, 0.2825, 0.0);
+		glColor3f(purple.r, purple.g, purple.b);		//purple
+		drawHalfCylinder(0.1, 0.2, 0.2);
 
-	glPopMatrix();
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	fourIrregularPoint point;
+		glPushMatrix();
 
-	//left side lower
-	point.fld.x = -0.225, point.fld.y = 0.5, point.fld.z = 0.0;
-	point.flu.x = -0.1875, point.flu.y = 0.65, point.flu.z = 0.0;
-	point.fru.x = -0.175, point.fru.y = 0.65, point.fru.z = 0.0;
-	point.frd.x = -0.1875, point.frd.y = 0.5, point.frd.z = 0.0;
+		glTranslatef(0.0, 0.0, -0.05);
 
-	point.bld.x = -0.325, point.bld.y = 0.4, point.bld.z = 0.35;
-	point.blu.x = -0.3, point.blu.y = 0.65, point.blu.z = 0.55;
-	point.bru.x = -0.275, point.bru.y = 0.65, point.bru.z = 0.55;
-	point.brd.x = -0.3, point.brd.y = 0.4, point.brd.z = 0.35;
+		texture = LoadTexture("ice.bmp");
 
-	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
+		glColor3f(purple.r, purple.g, purple.b);		//purple
+		drawHalfCylinder(0.0, 0.1, 0.05);
 
-	//right side lower
-	point.fld.x = 0.225, point.fld.y = 0.5, point.fld.z = 0.0;
-	point.flu.x = 0.1875, point.flu.y = 0.65, point.flu.z = 0.0;
-	point.fru.x = 0.175, point.fru.y = 0.65, point.fru.z = 0.0;
-	point.frd.x = 0.1875, point.frd.y = 0.5, point.frd.z = 0.0;
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	point.bld.x = 0.35, point.bld.y = 0.4, point.bld.z = 0.35;
-	point.blu.x = 0.325, point.blu.y = 0.65, point.blu.z = 0.55;
-	point.bru.x = 0.3, point.bru.y = 0.65, point.bru.z = 0.55;
-	point.brd.x = 0.325, point.brd.y = 0.4, point.brd.z = 0.35;
+		glPopMatrix();
+		glPopMatrix();
+		glPopMatrix();
 
-	fourPointIrregularShape(point, true, false, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple);
+		//the between
+		glPushMatrix();
+
+		glTranslatef(0.0, 0.575, 0.5);
+
+		texture = LoadTexture("ice.bmp");
+
+		glColor3f(black.r, black.g, black.b);		//black
+		drawHalfCylinder(0.0, 0.2825, 0.0);
+
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+
+		glPopMatrix();
+
+		fourIrregularPoint point;
+
+		//left side lower
+		point.fld.x = -0.225, point.fld.y = 0.5, point.fld.z = 0.0;
+		point.flu.x = -0.1875, point.flu.y = 0.65, point.flu.z = 0.0;
+		point.fru.x = -0.175, point.fru.y = 0.65, point.fru.z = 0.0;
+		point.frd.x = -0.1875, point.frd.y = 0.5, point.frd.z = 0.0;
+
+		point.bld.x = -0.325, point.bld.y = 0.4, point.bld.z = 0.35;
+		point.blu.x = -0.3, point.blu.y = 0.65, point.blu.z = 0.55;
+		point.bru.x = -0.275, point.bru.y = 0.65, point.bru.z = 0.55;
+		point.brd.x = -0.3, point.brd.y = 0.4, point.brd.z = 0.35;
+
+		texture = LoadTexture("ice.bmp");
+
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple, textureSwitch, texture);
+
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+
+		//right side lower
+		point.fld.x = 0.225, point.fld.y = 0.5, point.fld.z = 0.0;
+		point.flu.x = 0.1875, point.flu.y = 0.65, point.flu.z = 0.0;
+		point.fru.x = 0.175, point.fru.y = 0.65, point.fru.z = 0.0;
+		point.frd.x = 0.1875, point.frd.y = 0.5, point.frd.z = 0.0;
+
+		point.bld.x = 0.35, point.bld.y = 0.4, point.bld.z = 0.35;
+		point.blu.x = 0.325, point.blu.y = 0.65, point.blu.z = 0.55;
+		point.bru.x = 0.3, point.bru.y = 0.65, point.bru.z = 0.55;
+		point.brd.x = 0.325, point.brd.y = 0.4, point.brd.z = 0.35;
+
+		texture = LoadTexture("ice.bmp");
+
+		fourPointIrregularShape(point, true, false, materialSwitch, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple,
+			textureSwitch, texture);
+
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+	}
+	else
+	{
+		//back piece
+		glPushMatrix();
+
+		glTranslatef(0.0, 0.575, 0.45);
+
+		glColor3f(purple.r, purple.g, purple.b);		//purple
+		drawHalfCylinder(0.3, 0.25, 0.5);
+
+		glPushMatrix();
+
+		glTranslatef(0.0, 0.0, 0.5);
+
+		glColor3f(purple.r, purple.g, purple.b);		//purple
+		drawHalfCylinder(0.25, 0.1, 0.2);
+
+		glPushMatrix();
+
+		glTranslatef(0.0, 0.0, 0.2);
+
+		glColor3f(purple.r, purple.g, purple.b);		//purple
+		drawHalfCylinder(0.1, 0.0, 0.05);
+
+		glPopMatrix();
+		glPopMatrix();
+		glPopMatrix();
+
+		//front piece
+		glPushMatrix();
+
+		glTranslatef(0.0, 0.575, -0.05);
+
+		glColor3f(purple.r, purple.g, purple.b);		//purple
+		drawHalfCylinder(0.2, 0.25, 0.6);
+
+		glPushMatrix();
+
+		glTranslatef(0.0, 0.0, -0.2);
+
+		glColor3f(purple.r, purple.g, purple.b);		//purple
+		drawHalfCylinder(0.1, 0.2, 0.2);
+
+		glPushMatrix();
+
+		glTranslatef(0.0, 0.0, -0.05);
+
+		glColor3f(purple.r, purple.g, purple.b);		//purple
+		drawHalfCylinder(0.0, 0.1, 0.05);
+
+		glPopMatrix();
+		glPopMatrix();
+		glPopMatrix();
+
+		//the between
+		glPushMatrix();
+
+		glTranslatef(0.0, 0.575, 0.5);
+
+		glColor3f(black.r, black.g, black.b);		//black
+		drawHalfCylinder(0.0, 0.2825, 0.0);
+
+		glPopMatrix(); fourIrregularPoint point;
+
+		//left side lower
+		point.fld.x = -0.225, point.fld.y = 0.5, point.fld.z = 0.0;
+		point.flu.x = -0.1875, point.flu.y = 0.65, point.flu.z = 0.0;
+		point.fru.x = -0.175, point.fru.y = 0.65, point.fru.z = 0.0;
+		point.frd.x = -0.1875, point.frd.y = 0.5, point.frd.z = 0.0;
+
+		point.bld.x = -0.325, point.bld.y = 0.4, point.bld.z = 0.35;
+		point.blu.x = -0.3, point.blu.y = 0.65, point.blu.z = 0.55;
+		point.bru.x = -0.275, point.bru.y = 0.65, point.bru.z = 0.55;
+		point.brd.x = -0.3, point.brd.y = 0.4, point.brd.z = 0.35;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, purple, purple, purple, purple, purple, purple);
+
+		//right side lower
+		point.fld.x = 0.225, point.fld.y = 0.5, point.fld.z = 0.0;
+		point.flu.x = 0.1875, point.flu.y = 0.65, point.flu.z = 0.0;
+		point.fru.x = 0.175, point.fru.y = 0.65, point.fru.z = 0.0;
+		point.frd.x = 0.1875, point.frd.y = 0.5, point.frd.z = 0.0;
+
+		point.bld.x = 0.35, point.bld.y = 0.4, point.bld.z = 0.35;
+		point.blu.x = 0.325, point.blu.y = 0.65, point.blu.z = 0.55;
+		point.bru.x = 0.3, point.bru.y = 0.65, point.bru.z = 0.55;
+		point.brd.x = 0.325, point.brd.y = 0.4, point.brd.z = 0.35;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple);
+	}
 }
 
 void topArmorLine()
@@ -1285,7 +2736,7 @@ void topArmorLine()
 	point.bru.x = -0.275, point.bru.y = 0.65, point.bru.z = 0.55;
 	point.brd.x = -0.3, point.brd.y = 0.4, point.brd.z = 0.35;
 
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
+	fourPointIrregularShape(point, false, false, materialSwitch, purple, purple, purple, purple, purple, purple);
 
 	//right side lower
 	point.fld.x = 0.225, point.fld.y = 0.5, point.fld.z = 0.0;
@@ -1298,90 +2749,201 @@ void topArmorLine()
 	point.bru.x = 0.3, point.bru.y = 0.65, point.bru.z = 0.55;
 	point.brd.x = 0.325, point.brd.y = 0.4, point.brd.z = 0.35;
 
-	fourPointIrregularShape(point, false, false, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple);
+	fourPointIrregularShape(point, false, false, materialSwitch, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple);
 }
 
 void eyes()
 {
-	fourIrregularPoint point;
+	if (textureSwitch)
+	{
+		fourIrregularPoint point;
 
-	//left eye
-	point.fld.x = -0.3, point.fld.y = 0.45, point.fld.z = -0.3;
-	point.flu.x = -0.05, point.flu.y = 0.55, point.flu.z = -0.3;
-	point.fru.x = -0.025, point.fru.y = 0.6, point.fru.z = -0.3;
-	point.frd.x = -0.025, point.frd.y = 0.45, point.frd.z = -0.3;
+		//left eye
+		point.fld.x = -0.3, point.fld.y = 0.45, point.fld.z = -0.3;
+		point.flu.x = -0.05, point.flu.y = 0.55, point.flu.z = -0.3;
+		point.fru.x = -0.025, point.fru.y = 0.6, point.fru.z = -0.3;
+		point.frd.x = -0.025, point.frd.y = 0.45, point.frd.z = -0.3;
 
-	point.bld.x = -0.3, point.bld.y = 0.4, point.bld.z = 0.15;
-	point.blu.x = -0.125, point.blu.y = 0.65, point.blu.z = 0.15;
-	point.bru.x = -0.1, point.bru.y = 0.65, point.bru.z = 0.15;
-	point.brd.x = -0.1, point.brd.y = 0.4, point.brd.z = 0.15;
+		point.bld.x = -0.3, point.bld.y = 0.4, point.bld.z = 0.15;
+		point.blu.x = -0.125, point.blu.y = 0.65, point.blu.z = 0.15;
+		point.bru.x = -0.1, point.bru.y = 0.65, point.bru.z = 0.15;
+		point.brd.x = -0.1, point.brd.y = 0.4, point.brd.z = 0.15;
 
-	fourPointIrregularShape(point, true, false, black, black, black, black, black, black);
+		texture = LoadTexture("ice.bmp");
 
-	//left eye ball
+		fourPointIrregularShape(point, true, false, materialSwitch, black, black, black, black, black, black, textureSwitch, texture);
 
-	point.fld.x = -0.2125, point.fld.y = 0.475, point.fld.z = -0.3;
-	point.flu.x = -0.0625, point.flu.y = 0.525, point.flu.z = -0.3;
-	point.fru.x = -0.0625, point.fru.y = 0.525, point.fru.z = -0.3;
-	point.frd.x = -0.2125, point.frd.y = 0.475, point.frd.z = -0.3;
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	point.bld.x = -0.2125, point.bld.y = 0.525, point.bld.z = -0.1;
-	point.blu.x = -0.1125, point.blu.y = 0.625, point.blu.z = -0.1;
-	point.bru.x = -0.1125, point.bru.y = 0.625, point.bru.z = -0.1;
-	point.brd.x = -0.2125, point.brd.y = 0.525, point.brd.z = -0.1;
+		//left eye ball
 
-	fourPointIrregularShape(point, true, false, white, white, white, white, white, white);
+		point.fld.x = -0.2125, point.fld.y = 0.475, point.fld.z = -0.3;
+		point.flu.x = -0.0625, point.flu.y = 0.525, point.flu.z = -0.3;
+		point.fru.x = -0.0625, point.fru.y = 0.525, point.fru.z = -0.3;
+		point.frd.x = -0.2125, point.frd.y = 0.475, point.frd.z = -0.3;
 
-	//right eye
-	point.fld.x = 0.3, point.fld.y = 0.45, point.fld.z = -0.3;
-	point.flu.x = 0.05, point.flu.y = 0.55, point.flu.z = -0.3;
-	point.fru.x = 0.025, point.fru.y = 0.6, point.fru.z = -0.3;
-	point.frd.x = 0.025, point.frd.y = 0.45, point.frd.z = -0.3;
+		point.bld.x = -0.2125, point.bld.y = 0.525, point.bld.z = -0.1;
+		point.blu.x = -0.1125, point.blu.y = 0.625, point.blu.z = -0.1;
+		point.bru.x = -0.1125, point.bru.y = 0.625, point.bru.z = -0.1;
+		point.brd.x = -0.2125, point.brd.y = 0.525, point.brd.z = -0.1;
 
-	point.bld.x = 0.3, point.bld.y = 0.4, point.bld.z = 0.15;
-	point.blu.x = 0.125, point.blu.y = 0.65, point.blu.z = 0.15;
-	point.bru.x = 0.1, point.bru.y = 0.65, point.bru.z = 0.15;
-	point.brd.x = 0.1, point.brd.y = 0.4, point.brd.z = 0.15;
+		texture = LoadTexture("ice.bmp");
 
-	fourPointIrregularShape(point, true, false, black, black, black, black, black, black);
+		fourPointIrregularShape(point, true, false, materialSwitch, white, white, white, white, white, white, textureSwitch, texture);
 
-	//right eye ball
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	point.fld.x = 0.2125, point.fld.y = 0.475, point.fld.z = -0.3;
-	point.flu.x = 0.0625, point.flu.y = 0.525, point.flu.z = -0.3;
-	point.fru.x = 0.0625, point.fru.y = 0.525, point.fru.z = -0.3;
-	point.frd.x = 0.2125, point.frd.y = 0.475, point.frd.z = -0.3;
+		//right eye
+		point.fld.x = 0.3, point.fld.y = 0.45, point.fld.z = -0.3;
+		point.flu.x = 0.05, point.flu.y = 0.55, point.flu.z = -0.3;
+		point.fru.x = 0.025, point.fru.y = 0.6, point.fru.z = -0.3;
+		point.frd.x = 0.025, point.frd.y = 0.45, point.frd.z = -0.3;
 
-	point.bld.x = 0.2125, point.bld.y = 0.525, point.bld.z = -0.1;
-	point.blu.x = 0.1125, point.blu.y = 0.625, point.blu.z = -0.1;
-	point.bru.x = 0.1125, point.bru.y = 0.625, point.bru.z = -0.1;
-	point.brd.x = 0.2125, point.brd.y = 0.525, point.brd.z = -0.1;
+		point.bld.x = 0.3, point.bld.y = 0.4, point.bld.z = 0.15;
+		point.blu.x = 0.125, point.blu.y = 0.65, point.blu.z = 0.15;
+		point.bru.x = 0.1, point.bru.y = 0.65, point.bru.z = 0.15;
+		point.brd.x = 0.1, point.brd.y = 0.4, point.brd.z = 0.15;
 
-	fourPointIrregularShape(point, true, false, white, white, white, white, white, white);
+		texture = LoadTexture("ice.bmp");
 
-	//eye side
-	glPushMatrix();
+		fourPointIrregularShape(point, true, false, materialSwitch, black, black, black, black, black, black, textureSwitch, texture);
 
-	glTranslatef(0.0, 0.4, 0.0);
-	glRotatef(-90, 1.0, 0.0, 0.0);
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	glColor3f(purple.r, purple.g, purple.b);		//purple
+		//right eye ball
 
-	drawHalfCylinder(0.5, 0.1, 0.2);
+		point.fld.x = 0.2125, point.fld.y = 0.475, point.fld.z = -0.3;
+		point.flu.x = 0.0625, point.flu.y = 0.525, point.flu.z = -0.3;
+		point.fru.x = 0.0625, point.fru.y = 0.525, point.fru.z = -0.3;
+		point.frd.x = 0.2125, point.frd.y = 0.475, point.frd.z = -0.3;
 
-	glPopMatrix();
+		point.bld.x = 0.2125, point.bld.y = 0.525, point.bld.z = -0.1;
+		point.blu.x = 0.1125, point.blu.y = 0.625, point.blu.z = -0.1;
+		point.bru.x = 0.1125, point.bru.y = 0.625, point.bru.z = -0.1;
+		point.brd.x = 0.2125, point.brd.y = 0.525, point.brd.z = -0.1;
 
-	//eye middle
-	glPushMatrix();
+		texture = LoadTexture("ice.bmp");
 
-	glTranslatef(0.0, 0.4, -0.2);
-	glRotatef(-90, 1.0, 0.0, 0.0);
+		fourPointIrregularShape(point, true, false, materialSwitch, white, white, white, white, white, white, textureSwitch, texture);
 
-	glColor3f(purple.r, purple.g, purple.b);		//purple
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	drawHalfCylinder(0.35, 0.0, 0.2);
+		//eye side
+		glPushMatrix();
 
-	glPopMatrix();
+		glTranslatef(0.0, 0.4, 0.0);
+		glRotatef(-90, 1.0, 0.0, 0.0);
+
+		texture = LoadTexture("ice.bmp");
+
+		glColor3f(purple.r, purple.g, purple.b);		//purple
+		drawHalfCylinder(0.5, 0.1, 0.2);
+
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+
+		glPopMatrix();
+
+		//eye middle
+		glPushMatrix();
+
+		glTranslatef(0.0, 0.4, -0.2);
+		glRotatef(-90, 1.0, 0.0, 0.0);
+
+		texture = LoadTexture("ice.bmp");
+
+		glColor3f(purple.r, purple.g, purple.b);		//purple
+		drawHalfCylinder(0.35, 0.0, 0.2);
+
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+
+		glPopMatrix();
+	}
+	else
+	{
+		fourIrregularPoint point;
+
+		//left eye
+		point.fld.x = -0.3, point.fld.y = 0.45, point.fld.z = -0.3;
+		point.flu.x = -0.05, point.flu.y = 0.55, point.flu.z = -0.3;
+		point.fru.x = -0.025, point.fru.y = 0.6, point.fru.z = -0.3;
+		point.frd.x = -0.025, point.frd.y = 0.45, point.frd.z = -0.3;
+
+		point.bld.x = -0.3, point.bld.y = 0.4, point.bld.z = 0.15;
+		point.blu.x = -0.125, point.blu.y = 0.65, point.blu.z = 0.15;
+		point.bru.x = -0.1, point.bru.y = 0.65, point.bru.z = 0.15;
+		point.brd.x = -0.1, point.brd.y = 0.4, point.brd.z = 0.15;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, black, black, black, black, black, black);
+
+		//left eye ball
+
+		point.fld.x = -0.2125, point.fld.y = 0.475, point.fld.z = -0.3;
+		point.flu.x = -0.0625, point.flu.y = 0.525, point.flu.z = -0.3;
+		point.fru.x = -0.0625, point.fru.y = 0.525, point.fru.z = -0.3;
+		point.frd.x = -0.2125, point.frd.y = 0.475, point.frd.z = -0.3;
+
+		point.bld.x = -0.2125, point.bld.y = 0.525, point.bld.z = -0.1;
+		point.blu.x = -0.1125, point.blu.y = 0.625, point.blu.z = -0.1;
+		point.bru.x = -0.1125, point.bru.y = 0.625, point.bru.z = -0.1;
+		point.brd.x = -0.2125, point.brd.y = 0.525, point.brd.z = -0.1;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, white, white, white, white, white, white);
+
+		//right eye
+		point.fld.x = 0.3, point.fld.y = 0.45, point.fld.z = -0.3;
+		point.flu.x = 0.05, point.flu.y = 0.55, point.flu.z = -0.3;
+		point.fru.x = 0.025, point.fru.y = 0.6, point.fru.z = -0.3;
+		point.frd.x = 0.025, point.frd.y = 0.45, point.frd.z = -0.3;
+
+		point.bld.x = 0.3, point.bld.y = 0.4, point.bld.z = 0.15;
+		point.blu.x = 0.125, point.blu.y = 0.65, point.blu.z = 0.15;
+		point.bru.x = 0.1, point.bru.y = 0.65, point.bru.z = 0.15;
+		point.brd.x = 0.1, point.brd.y = 0.4, point.brd.z = 0.15;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, black, black, black, black, black, black);
+
+		//right eye ball
+
+		point.fld.x = 0.2125, point.fld.y = 0.475, point.fld.z = -0.3;
+		point.flu.x = 0.0625, point.flu.y = 0.525, point.flu.z = -0.3;
+		point.fru.x = 0.0625, point.fru.y = 0.525, point.fru.z = -0.3;
+		point.frd.x = 0.2125, point.frd.y = 0.475, point.frd.z = -0.3;
+
+		point.bld.x = 0.2125, point.bld.y = 0.525, point.bld.z = -0.1;
+		point.blu.x = 0.1125, point.blu.y = 0.625, point.blu.z = -0.1;
+		point.bru.x = 0.1125, point.bru.y = 0.625, point.bru.z = -0.1;
+		point.brd.x = 0.2125, point.brd.y = 0.525, point.brd.z = -0.1;
+
+		fourPointIrregularShape(point, true, false, materialSwitch, white, white, white, white, white, white);
+
+		//eye side
+		glPushMatrix();
+
+		glTranslatef(0.0, 0.4, 0.0);
+		glRotatef(-90, 1.0, 0.0, 0.0);
+
+		glColor3f(purple.r, purple.g, purple.b);		//purple
+		drawHalfCylinder(0.5, 0.1, 0.2);
+
+		glPopMatrix();
+
+		//eye middle
+		glPushMatrix();
+
+		glTranslatef(0.0, 0.4, -0.2);
+		glRotatef(-90, 1.0, 0.0, 0.0);
+
+		glColor3f(purple.r, purple.g, purple.b);		//purple
+		drawHalfCylinder(0.35, 0.0, 0.2);
+
+		glPopMatrix();
+	}
 }
 
 void eyesLine()
@@ -1399,7 +2961,7 @@ void eyesLine()
 	point.bru.x = -0.1, point.bru.y = 0.65, point.bru.z = 0.15;
 	point.brd.x = -0.1, point.brd.y = 0.4, point.brd.z = 0.15;
 
-	fourPointIrregularShape(point, false, false, black, black, black, black, black, black);
+	fourPointIrregularShape(point, false, false, materialSwitch, black, black, black, black, black, black);
 
 	//left eye ball
 
@@ -1413,7 +2975,7 @@ void eyesLine()
 	point.bru.x = -0.1125, point.bru.y = 0.625, point.bru.z = -0.1;
 	point.brd.x = -0.2125, point.brd.y = 0.525, point.brd.z = -0.1;
 
-	fourPointIrregularShape(point, false, false, white, white, white, white, white, white);
+	fourPointIrregularShape(point, false, false, materialSwitch, white, white, white, white, white, white);
 
 	//right eye
 	point.fld.x = 0.3, point.fld.y = 0.45, point.fld.z = -0.3;
@@ -1426,7 +2988,7 @@ void eyesLine()
 	point.bru.x = 0.1, point.bru.y = 0.65, point.bru.z = 0.15;
 	point.brd.x = 0.1, point.brd.y = 0.4, point.brd.z = 0.15;
 
-	fourPointIrregularShape(point, false, false, black, black, black, black, black, black);
+	fourPointIrregularShape(point, false, false, materialSwitch, black, black, black, black, black, black);
 
 	//right eye ball
 
@@ -1440,7 +3002,7 @@ void eyesLine()
 	point.bru.x = 0.1125, point.bru.y = 0.625, point.bru.z = -0.1;
 	point.brd.x = 0.2125, point.brd.y = 0.525, point.brd.z = -0.1;
 
-	fourPointIrregularShape(point, false, false, white, white, white, white, white, white);
+	fourPointIrregularShape(point, false, false, materialSwitch, white, white, white, white, white, white);
 
 	//eye side
 	glPushMatrix();
@@ -1469,16 +3031,35 @@ void eyesLine()
 
 void mouth()
 {
-	glColor3f(0.8, 0.8, 0.8);		//white-ish, grey
+	if (textureSwitch)
+	{
+		glPushMatrix();
 
-	glPushMatrix();
+		glTranslatef(0.0, -0.1, -0.1);
+		glRotatef(-90, 1.0, 0.0, 0.0);
 
-	glTranslatef(0.0, -0.1, -0.1);
-	glRotatef(-90, 1.0, 0.0, 0.0);
+		texture = LoadTexture("ice.bmp");
 
-	drawHalfCylinder(0.0, 0.3, 0.4);
+		glColor3f(0.8, 0.8, 0.8);		//white-ish, grey
+		drawHalfCylinder(0.0, 0.3, 0.4);
 
-	glPopMatrix();
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+
+		glPopMatrix();
+	}
+	else
+	{
+		glPushMatrix();
+
+		glTranslatef(0.0, -0.1, -0.1);
+		glRotatef(-90, 1.0, 0.0, 0.0);
+
+		glColor3f(0.8, 0.8, 0.8);		//white-ish, grey
+		drawHalfCylinder(0.0, 0.3, 0.4);
+
+		glPopMatrix();
+	}
 }
 
 void mouthLine()
@@ -1497,35 +3078,79 @@ void mouthLine()
 
 void corn()
 {
-	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark purple
+	if (textureSwitch)
+	{
+		glPushMatrix();
 
-	glPushMatrix();
+		glTranslatef(0.0, 0.6, -0.2);
+		glRotatef(250.0, 1.0, 0.0, 0.0);
 
-	glTranslatef(0.0, 0.6, -0.2);
-	glRotatef(250.0, 1.0, 0.0, 0.0);
+		texture = LoadTexture("ice.bmp");
 
-	drawCylinder(0.05, 0.025, 0.75);
+		glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark purple
+		drawCylinder(0.05, 0.025, 0.75);
 
-	glColor3f(lime.r, lime.g, lime.b);		//lime
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	glPushMatrix();
+		glPushMatrix();
 
-	glTranslatef(0.0, 0.0, 0.1875);
+		glTranslatef(0.0, 0.0, 0.1875);
 
-	drawCylinder(0.05, 0.05, 0.1875);
+		texture = LoadTexture("ice.bmp");
 
-	glPopMatrix();
+		glColor3f(lime.r, lime.g, lime.b);		//lime
+		drawCylinder(0.05, 0.05, 0.1875);
 
-	glColor3f(purple.r, purple.g, purple.b);		//purple
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	glPushMatrix();
+		glPopMatrix();
 
-	glTranslatef(0.0, 0.0, 0.75);
+		glPushMatrix();
 
-	drawCylinder(0.025, 0.0, 0.0);
+		glTranslatef(0.0, 0.0, 0.75);
 
-	glPopMatrix();
-	glPopMatrix();
+		texture = LoadTexture("ice.bmp");
+
+		glColor3f(purple.r, purple.g, purple.b);		//purple
+		drawCylinder(0.025, 0.0, 0.0);
+
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+
+		glPopMatrix();
+		glPopMatrix();
+	}
+	else
+	{
+		glPushMatrix();
+
+		glTranslatef(0.0, 0.6, -0.2);
+		glRotatef(250.0, 1.0, 0.0, 0.0);
+
+		glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark purple
+		drawCylinder(0.05, 0.025, 0.75);
+
+		glPushMatrix();
+
+		glTranslatef(0.0, 0.0, 0.1875);
+
+		glColor3f(lime.r, lime.g, lime.b);		//lime
+		drawCylinder(0.05, 0.05, 0.1875);
+
+		glPopMatrix();
+
+		glPushMatrix();
+
+		glTranslatef(0.0, 0.0, 0.75);
+
+		glColor3f(purple.r, purple.g, purple.b);		//purple
+		drawCylinder(0.025, 0.0, 0.0);
+
+		glPopMatrix();
+		glPopMatrix();
+	}
 }
 
 void cornLine()
@@ -1563,87 +3188,207 @@ void cornLine()
 
 void weapon()
 {
-	glColor3f(lime.r, lime.g, lime.b);
+	if (textureSwitch)
+	{
+		//bottom spike lower
+		glPushMatrix();
 
-	//bottom spike lower
-	glPushMatrix();
+		glTranslatef(0.0, -0.9, 0.0);
+		glRotatef(-90, 1.0, 0.0, 0.0);
 
-	glTranslatef(0.0, -0.9, 0.0);
-	glRotatef(-90, 1.0, 0.0, 0.0);
+		texture = LoadTexture("ice.bmp");
 
-	drawCylinder(0.0, 0.1, 0.15);
+		glColor3f(lime.r, lime.g, lime.b);		//lime
+		drawCylinder(0.0, 0.1, 0.15);
 
-	glPopMatrix();
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	//bottom spike upper
-	glPushMatrix();
+		glPopMatrix();
 
-	glTranslatef(0.0, -0.75, 0.0);
-	glRotatef(-90, 1.0, 0.0, 0.0);
+		//bottom spike upper
+		glPushMatrix();
 
-	drawCylinder(0.1, 0.0, 0.15);
+		glTranslatef(0.0, -0.75, 0.0);
+		glRotatef(-90, 1.0, 0.0, 0.0);
 
-	glPopMatrix();
+		texture = LoadTexture("ice.bmp");
 
-	glColor3f(purple.r, purple.g, purple.b);
+		glColor3f(lime.r, lime.g, lime.b);		//lime
+		drawCylinder(0.1, 0.0, 0.15);
 
-	//handle
-	glPushMatrix();
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	glTranslatef(0.0, -0.7, 0.0);
-	glRotatef(-90, 1.0, 0.0, 0.0);
+		glPopMatrix();
 
-	drawCylinder(0.05, 0.05, 0.8);
+		//handle
+		glPushMatrix();
 
-	glPopMatrix();
+		glTranslatef(0.0, -0.7, 0.0);
+		glRotatef(-90, 1.0, 0.0, 0.0);
 
-	//left joint
-	glPushMatrix();
+		texture = LoadTexture("ice.bmp");
 
-	glRotatef(-90, 0.0, 1.0, 0.0);
-	glRotatef(-45, 1.0, 0.0, 0.0);
+		glColor3f(purple.r, purple.g, purple.b);		//purple
+		drawCylinder(0.05, 0.05, 0.8);
 
-	glColor3f(lime.r, lime.g, lime.b);
-	drawSphere(0.075);
-	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);
-	drawCylinder(0.05, 0.1, 0.3);
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	glPushMatrix();
+		glPopMatrix();
 
-	glTranslatef(0.0, 0.0, 0.3);
-	glRotatef(-56.25, 1.0, 0.0, 0.0);
+		//left joint
+		glPushMatrix();
 
-	glColor3f(lime.r, lime.g, lime.b);
-	drawSphere(0.1);
-	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);
-	drawCylinder(0.1, 0.0, 0.5);
+		glRotatef(-90, 0.0, 1.0, 0.0);
+		glRotatef(-45, 1.0, 0.0, 0.0);
 
-	glPopMatrix();
-	glPopMatrix();
+		texture = LoadTexture("ice.bmp");
 
-	//right joint
-	glPushMatrix();
+		glColor3f(lime.r, lime.g, lime.b);		//lime
+		drawSphere(0.075);
+		glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark pruple
+		drawCylinder(0.05, 0.1, 0.3);
 
-	glRotatef(-90, 0.0, 1.0, 0.0);
-	glRotatef(-135, 1.0, 0.0, 0.0);
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
 
-	glColor3f(lime.r, lime.g, lime.b);
-	drawSphere(0.075);
-	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);
-	drawCylinder(0.05, 0.1, 0.3);
+		glPushMatrix();
 
-	glPushMatrix();
+		glTranslatef(0.0, 0.0, 0.3);
+		glRotatef(-56.25, 1.0, 0.0, 0.0);
 
-	glTranslatef(0.0, 0.0, 0.3);
-	glRotatef(56.25, 1.0, 0.0, 0.0);
+		texture = LoadTexture("ice.bmp");
 
-	glColor3f(lime.r, lime.g, lime.b);
-	drawSphere(0.1);
-	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);
-	drawCylinder(0.1, 0.0, 0.5);
+		glColor3f(lime.r, lime.g, lime.b);		//lime
+		drawSphere(0.1);
+		glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark pruple
+		drawCylinder(0.1, 0.0, 0.5);
 
-	glPopMatrix();
-	glPopMatrix();
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+
+		glPopMatrix();
+		glPopMatrix();
+
+		//right joint
+		glPushMatrix();
+
+		glRotatef(-90, 0.0, 1.0, 0.0);
+		glRotatef(-135, 1.0, 0.0, 0.0);
+
+		texture = LoadTexture("ice.bmp");
+
+		glColor3f(lime.r, lime.g, lime.b);		//lime
+		drawSphere(0.075);
+		glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark pruple
+		drawCylinder(0.05, 0.1, 0.3);
+
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+
+		glPushMatrix();
+
+		glTranslatef(0.0, 0.0, 0.3);
+		glRotatef(56.25, 1.0, 0.0, 0.0);
+
+		texture = LoadTexture("ice.bmp");
+
+		glColor3f(lime.r, lime.g, lime.b);		//lime
+		drawSphere(0.1);
+		glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark pruple
+		drawCylinder(0.1, 0.0, 0.5);
+
+		glDeleteTextures(1, &texture);
+		glDisable(GL_TEXTURE_2D);
+
+		glPopMatrix();
+		glPopMatrix();
+	}
+	else
+	{
+		//bottom spike lower
+		glPushMatrix();
+
+		glTranslatef(0.0, -0.9, 0.0);
+		glRotatef(-90, 1.0, 0.0, 0.0);
+
+		glColor3f(lime.r, lime.g, lime.b);		//lime
+		drawCylinder(0.0, 0.1, 0.15);
+
+		glPopMatrix();
+
+		//bottom spike upper
+		glPushMatrix();
+
+		glTranslatef(0.0, -0.75, 0.0);
+		glRotatef(-90, 1.0, 0.0, 0.0);
+
+		glColor3f(lime.r, lime.g, lime.b);		//lime
+		drawCylinder(0.1, 0.0, 0.15);
+
+		glPopMatrix();
+
+		//handle
+		glPushMatrix();
+
+		glTranslatef(0.0, -0.7, 0.0);
+		glRotatef(-90, 1.0, 0.0, 0.0);
+
+		glColor3f(purple.r, purple.g, purple.b);		//purple
+		drawCylinder(0.05, 0.05, 0.8);
+
+		glPopMatrix();
+
+		//left joint
+		glPushMatrix();
+
+		glRotatef(-90, 0.0, 1.0, 0.0);
+		glRotatef(-45, 1.0, 0.0, 0.0);
+
+		glColor3f(lime.r, lime.g, lime.b);		//lime
+		drawSphere(0.075);
+		glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark pruple
+		drawCylinder(0.05, 0.1, 0.3);
+
+		glPushMatrix();
+
+		glTranslatef(0.0, 0.0, 0.3);
+		glRotatef(-56.25, 1.0, 0.0, 0.0);
+
+		glColor3f(lime.r, lime.g, lime.b);		//lime
+		drawSphere(0.1);
+		glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark pruple
+		drawCylinder(0.1, 0.0, 0.5);
+
+		glPopMatrix();
+		glPopMatrix();
+
+		//right joint
+		glPushMatrix();
+
+		glRotatef(-90, 0.0, 1.0, 0.0);
+		glRotatef(-135, 1.0, 0.0, 0.0);
+
+		glColor3f(lime.r, lime.g, lime.b);		//lime
+		drawSphere(0.075);
+		glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark pruple
+		drawCylinder(0.05, 0.1, 0.3);
+
+		glPushMatrix();
+
+		glTranslatef(0.0, 0.0, 0.3);
+		glRotatef(56.25, 1.0, 0.0, 0.0);
+
+		glColor3f(lime.r, lime.g, lime.b);		//lime
+		drawSphere(0.1);
+		glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark pruple
+		drawCylinder(0.1, 0.0, 0.5);
+
+		glPopMatrix();
+		glPopMatrix();
+	}
 }
 
 void weaponLine()
@@ -1735,6 +3480,36 @@ void display()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glEnable(GL_DEPTH_TEST);
+
+	if (lightSwitch != 0)
+	{
+		float temp[] = { white.r,white.g,white.b };
+
+		glEnable(GL_LIGHTING);
+
+		if (lightSwitch == 1)
+		{
+			glLightfv(GL_LIGHT0, GL_AMBIENT, temp);
+			glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
+
+			glEnable(GL_LIGHT0);
+		}
+		else
+		{
+			glDisable(GL_LIGHT0);
+
+			glLightfv(GL_LIGHT1, GL_DIFFUSE, temp);
+			glLightfv(GL_LIGHT1, GL_POSITION, lightPos);
+
+			glEnable(GL_LIGHT1);
+		}
+	}
+	else
+	{
+		glDisable(GL_LIGHT1);
+
+		glDisable(GL_LIGHTING);
+	}
 
 	glLoadIdentity();
 	glRotatef(rx, 0.0, 1.0, 0.0);
