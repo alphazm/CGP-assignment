@@ -12,8 +12,6 @@ const float PI = 3.141592f, speed = 0.1;
 
 void weapon();
 
-void weaponLine();
-
 //drawing
 struct color
 {
@@ -35,10 +33,6 @@ struct fourIrregularPoint
 float rx = 0.0, ry = 0.0, rz = 0.0, rs = 1.0;
 
 bool weaponSwitch = false, styleSwitch = true;
-
-color black = { 0.01,0.01,0.01 }, white = { 0.99,0.99,0.99 };
-color purple = { 0.5,0.0,1.0 }, darkPurple = { 0.25,0.0,0.5 };
-color lime = { 0.0,1.0,0.5 };
 
 
 //---------------------------------------------------------------
@@ -87,9 +81,12 @@ Vec3 upVector = { 0.0f, 1.0f, 0.0f };       // Up direction
 float radius = 50.0f;              // Distance from camera to target
 float yaw = 0.0f;                 // Horizontal angle (in radians)
 float pitch = 0.0f;               // Vertical angle (in radians)
-GLenum style_glu= GLU_LINE,style_gl=GL_LINE_LOOP;
+
+GLenum style_glu= GLU_LINE,style_gl=GL_LINE_LOOP,style_gl_curve = GL_LINE_STRIP;
+//Draw style for lower body
+GLenum polygonFaceGLStyle = GL_LINE_LOOP, polygonSideGLStyle = GL_LINE_LOOP;
 int style_switch=0;
-float tx, ty, tz,angle;
+
 float Oner=-100, Ofar=100, Pner=0.1, Pfar=100;
 bool ortho=false;
 
@@ -100,7 +97,6 @@ float posA[] = { 0,3,0 };
 float posB[] = { 0,3,0 };
 float ambM[] = { 0.2, 0.2, 0.2, 1.0 }; // Low ambient reflection
 float difM[] = { 0.5, 0.5, 0.5, 1.0 }; // Strong diffuse reflection
-bool lightSwitch = false;
 bool changeMaterial = false;
 
 //animation
@@ -160,19 +156,25 @@ BITMAP BMP;
 HBITMAP hBMP = NULL;
 bool textureSwitch = false;
 int textureCount=0;
-GLuint textureArr[4];
+GLuint textureArr[5]; //0 for armmor, 1 for join part, 2 for detail, 3 for shiny part
+LPCSTR  textureName = "";
 
 //color 
 float r, g, b;
 float colorR = 0, colorG = 0, colorB = 0;
 bool colorSwitch = true;
+color red = { 1.0,0.0,0.0 }, green = { 0.0,1.0,0.0 }, blue = { 0.0,0.0,1.0 };
+color yellow = { 1.0,1.0,0.0 }, magenta = { 1.0,0.0,1.0 }, cyan = { 0.0,1.0,1.0 };
+color black = { 0.01,0.01,0.01 }, white = { 0.99,0.99,0.99 };
+color purple = { 0.5,0.0,1.0 }, darkPurple = { 0.25,0.0,0.5 };
+color lime = { 0.0,1.0,0.5 };
 
 GLUquadricObj* obj = NULL;
-
+int  lightSwitch = 0, materialSwitch = 0;
 
 float animationSpeed = 0.01; // Speed of the walking animation
 float animationTime = 0.0;   // Keeps track of the current time in the animation
-void updateWalkingAnimation() {
+void updateWalkingAnimation()  {
 	// Update animation time
 	if (walk) {
 		animationTime += animationSpeed;
@@ -244,12 +246,14 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			{
 			case 0:
 				style_glu = GLU_LINE;
-				style_gl = GL_LINE_LOOP;
-				
+				style_gl = polygonFaceGLStyle = polygonSideGLStyle = GL_LINE_LOOP;
+				style_gl_curve = GL_LINE_STRIP;
 				break;
 			case 1:
 				style_glu = GLU_FILL;
-				style_gl = GL_POLYGON;
+				style_gl = polygonFaceGLStyle = GL_POLYGON;
+				polygonSideGLStyle = GL_QUADS;
+				style_gl_curve = GL_TRIANGLE_STRIP;
 				break;
 			default:
 				break;
@@ -258,7 +262,37 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 		}
 		if (wParam == 'W') { walk = !walk; }
 		if (wParam == 'I') { weaponSwitch = !weaponSwitch; }
-		if (wParam == 'R') { textureCount++; textureCount %= 3; }
+		if (wParam == 'R') {
+			textureCount++; 
+			textureCount %= 3;
+			switch (textureCount)
+			{
+			case 0:
+				textureArr[4] = textureArr[0];
+				textureArr[0] = textureArr[1];
+				textureArr[1] = textureArr[2];
+				textureArr[2] = textureArr[3];
+				textureArr[3] = textureArr[4];
+				break;
+			case 1:
+				textureArr[4] = textureArr[0];
+				textureArr[0] = textureArr[1];
+				textureArr[1] = textureArr[2];
+				textureArr[2] = textureArr[3];
+				textureArr[3] = textureArr[4];
+				
+				break;
+			case 2:
+				textureArr[4] = textureArr[0];
+				textureArr[0] = textureArr[1];
+				textureArr[1] = textureArr[2];
+				textureArr[2] = textureArr[3];
+				textureArr[3] = textureArr[4];
+				break;
+			default:
+				break;
+			}
+		}
 		if (wParam == 'T') { textureSwitch = !textureSwitch; }
 		if (wParam == 'C') { colorSwitch = !colorSwitch; }
 		if (wParam == 'M') { changeMaterial = !changeMaterial; }
@@ -268,10 +302,10 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			/*if (arm_upper_current_angle_y > arm_upper_max_angle_y)
 				arm_upper_current_angle_y -= speed+5;*/
 
-			if (arm_upper_left_current_angle_z < arm_upper_max_angle_z)
+			/*if (arm_upper_left_current_angle_z < arm_upper_max_angle_z)
 				arm_upper_left_current_angle_z += speed + 5;
 			if (arm_upper_right_current_angle_z < arm_upper_max_angle_z)
-				arm_upper_right_current_angle_z += speed + 5;
+				arm_upper_right_current_angle_z += speed + 5;*/
 
 			/*if (hand_right_current_angle > hand_max_angle)
 				hand_right_current_angle -= speed + 5;*/
@@ -292,10 +326,10 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			/*if (arm_upper_current_angle_y < arm_upper_min_angle_y)
 				arm_upper_current_angle_y += speed+5;*/
 
-			if (arm_upper_left_current_angle_z > arm_upper_min_angle_z)
+			/*if (arm_upper_left_current_angle_z > arm_upper_min_angle_z)
 				arm_upper_left_current_angle_z -= speed + 5;
 			if (arm_upper_right_current_angle_z > arm_upper_min_angle_z)
-				arm_upper_right_current_angle_z -= speed + 5;
+				arm_upper_right_current_angle_z -= speed + 5;*/
 
 
 			/*if (hand_right_current_angle < hand_min_angle)
@@ -325,7 +359,7 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			radius = 50.0f;              
 			yaw = 0.0f;                 
 			pitch = 0.0f;
-			ty = tx = tx = angle = 0;
+
 		}
 		cameraPosition.x = target.x + radius * cos(yaw) * cos(pitch);
 		cameraPosition.y = target.y + radius * sin(pitch);
@@ -455,7 +489,7 @@ void drawSphereWithoutGLU(GLfloat radius = 0.35, int sliceNo = 30, int stackNo =
 
 	for (slice = sliceA; slice < 2 * PI; slice += PI / sliceNo)
 	{
-		glBegin(GL_TRIANGLE_STRIP); // Use GL_TRIANGLE_STRIP for smoother rendering
+		glBegin(style_gl_curve); // Use GL_TRIANGLE_STRIP for smoother rendering
 		for (stack = stackA; stack <= 2 * PI; stack += PI / stackNo)
 		{
 			// First vertex
@@ -487,7 +521,7 @@ void drawSphereWithoutGLUAdvanced(GLfloat xRadius = 0.35, GLfloat yRadius = 0.35
 
 	for (sliceA = 0.0; sliceA < 2 * PI; sliceA += PI / sliceNo)
 	{
-		glBegin(style_gl);
+		glBegin(style_gl_curve);
 		for (stackA = 0.0; stackA < PI; stackA += PI / stackNo)
 		{
 			x = xRadius * cos(stackA) * sin(sliceA);
@@ -551,40 +585,47 @@ void light() {
 GLuint loadTexture(LPCSTR filename) {
 
 	GLuint texture = 0;
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4); 
+
+	// Load the texture file
 	HBITMAP hBMP = (HBITMAP)LoadImage(GetModuleHandle(NULL),
 		filename, IMAGE_BITMAP, 0, 0, LR_CREATEDIBSECTION |
 		LR_LOADFROMFILE);
+
+	// Retrieve bitmap information
 	GetObject(hBMP, sizeof(BMP), &BMP);
+
 	glEnable(GL_TEXTURE_2D);
 	glGenTextures(1, &texture);
 	glBindTexture(GL_TEXTURE_2D, texture);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-		GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-		GL_LINEAR);
+
+	// Set texture parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, BMP.bmWidth, BMP.bmHeight, 0, GL_BGR_EXT, GL_UNSIGNED_BYTE, BMP.bmBits);
-	DeleteObject(hBMP);
+
+	glBindTexture(GL_TEXTURE_2D, 0); // Unbind texture
+	glDisable(GL_TEXTURE_2D);
+
 	return texture;
 }
 
-void texture() {
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE); // Disable glColor3f effect
-	if (textureSwitch)
-		switch (textureCount)
-		{
-		case 0:
-			textureArr[0] = loadTexture("waffle.bmp");
+void setUpTexture() {
 
-			break;
-		case 1:
-			break;
-		case 2:
-			break;
-		default:
-			break;
-		}
-		
+	textureArr[0] = loadTexture("waffle.bmp");
+	textureArr[1] = loadTexture("vanila.bmp");
+	textureArr[2] = loadTexture("stawberry.bmp");
+	textureArr[3] = loadTexture("cherry.bmp");
+}
+
+void Texture() {
+	if (textureSwitch) {
+		glEnable(GL_TEXTURE_2D);
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE); // Disable glColor3f effect
+	}	
 	else
 		glDisable(GL_TEXTURE_2D);
 	
@@ -595,15 +636,12 @@ void destory() {
 	glDeleteTextures(1, &textureArr[1]);
 	glDeleteTextures(1, &textureArr[2]);
 	glDeleteTextures(1, &textureArr[3]);
-	glDisable(GL_TEXTURE_2D);
 }
 
 void camera() {
 	gluLookAt(cameraPosition.x, cameraPosition.y, cameraPosition.z,
 		target.x, target.y, target.z,
 		upVector.x,upVector.y,upVector.z);
-	glTranslatef(tx, ty, tz);
-	glRotatef(angle, 0, 0, 1);
 }
 //--------------body start-------------------
 void cheast_frame1() {
@@ -1012,6 +1050,7 @@ void cheast_middle() {
 	glPushMatrix();
 	glScalef(1.6,1.6,1.6);
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
 	glPushMatrix();
 	glColor3f(r,0,0);
 	glRotatef(180, 0, 0, 1);
@@ -1034,13 +1073,17 @@ void cheast_middle() {
 	glRotatef(-90, 1, 0, 0);
 	disk(0,1,20,20,style_glu);
 	glPopMatrix();
+	glBindTexture(GL_TEXTURE_2D, 0);
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[3]);
 	glPushMatrix();
 	glColor3f(0, g, 0);
 	glTranslatef(0, 0, -0.5);
 	sphere(0.4,20,20,style_glu);
 	glPopMatrix();
+	glBindTexture(GL_TEXTURE_2D, 0);
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	// the triangle
 	glPushMatrix();
 	glColor3f(0,0,b);
@@ -1089,16 +1132,17 @@ void cheast_middle() {
 	glTexCoord2f(1.0f, 0.0f); glVertex3f(0.2, 0.05, 0);
 	glTexCoord2f(1.0f, 1.0f); glVertex3f(0.2, -1.3, 0.1);
 	glEnd();
-
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopMatrix();//move the trin back 
 
 	glPopMatrix();//last pop
-	
+	glBindTexture(GL_TEXTURE_2D, textureArr[2]);
 	cheast_middle_detail();
 
 	glPushMatrix();
 	glScalef(-1, 1, 1);
 	cheast_middle_detail();
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopMatrix();
 }
 
@@ -1147,7 +1191,9 @@ void body_upper() {
 		glPushMatrix();
 		glRotatef(((360 / 15) * i), 0, 0, 1);
 		glColor3f(r, g, b);
+		glBindTexture(GL_TEXTURE_2D, textureArr[2]);
 		rect(1.2, 0.2, 4, style_gl);
+		glBindTexture(GL_TEXTURE_2D, 0);
 		glPopMatrix();
 	}
 
@@ -1416,14 +1462,17 @@ void arm_upper(bool left) {
 		glRotatef(arm_upper_right_current_angle_z, 0, 0, 1);
 		glRotatef(arm_upper_right_current_angle_x, 1, 0, 0);
 	}
-	
+
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	glPushMatrix();
 	glColor3f(0, g, 0);
 	glTranslatef(0, 0, -0.7);
 	glRotatef(45, 1, 0, 0);
 	rect(1.8, 1, 1, style_gl);
 	glPopMatrix();
+	glBindTexture(GL_TEXTURE_2D, 0);
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
 	glPushMatrix();
 	glColor3f(r, g, b);
 	glRotatef(90, 0, 1, 0);
@@ -1434,8 +1483,9 @@ void arm_upper(bool left) {
 	glColor3f(r, 0, 0);
 	glTranslatef(1.8, -0.4, -0.5);
 	rect(0.8,0.8,1,style_gl);
+	glBindTexture(GL_TEXTURE_2D, 0);
 	
-
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	glPushMatrix();
 	glColor3f(r, g, 0);
 	glTranslatef(0, -0.2, -0.05);
@@ -1446,14 +1496,16 @@ void arm_upper(bool left) {
 	glTranslatef(0, 0.8, -0.05);
 	rect(1.8, 0.2, 1.1, style_gl);
 	glPopMatrix();
+	glBindTexture(GL_TEXTURE_2D, 0);
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[3]);
 	glPushMatrix();
 	glColor3f(0, g, 0);
 	glTranslatef(1.4, 0.9, 0.5);
 	glRotatef(90, 1, 0, 0);
 	cylinder(0.1,0.1,1,10, 10, style_glu);
 	glPopMatrix();
-
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopMatrix();//connection
 
 }
@@ -1471,12 +1523,14 @@ void arm_lower(bool left) {
 	{
 		glRotatef(arm_lower_right_current_angle, 0, 1, 0);
 	}
-
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
 	glPushMatrix();
 	glRotatef(90, 0, 1, 0);
 	cylinder(0.4, 0.4, 3, 10, 10, style_glu);
 	glPopMatrix();
+	glBindTexture(GL_TEXTURE_2D, 0);
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[2]);
 	glPushMatrix();
 	glTranslatef(2.3,-0.5,-0.5);
 	rect(0.5,1,1,style_gl);
@@ -1486,13 +1540,14 @@ void arm_lower(bool left) {
 	glColor3f(r, 0, 0);
 	rect(0.3, 0.5, 0.3, style_gl);
 	glPopMatrix();
+	glBindTexture(GL_TEXTURE_2D, 0);
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	glPushMatrix();
 	glColor3f(0, 0, b);
 	glTranslatef(-2,1.5,-0.5);
 	rect(4, 0.3, 2, style_gl);
 	glPopMatrix();
-
 	glPopMatrix();
 
 	glPushMatrix();
@@ -1501,12 +1556,13 @@ void arm_lower(bool left) {
 	glRotatef(45,1,0,0);
 	rect(2,1,1,style_gl);
 	glPopMatrix();
-
+	glBindTexture(GL_TEXTURE_2D, 0);
 	
 }
 
 void finger1() {
 	// Base connection
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
 	glPushMatrix();
 	glRotatef(90, 1, 0, 0);
 	glColor3f(0, 0, 0);
@@ -1519,8 +1575,11 @@ void finger1() {
 	disk(0, 0.2, 20, 20, style_glu);
 	glPopMatrix();
 	glPopMatrix();
+	glBindTexture(GL_TEXTURE_2D, 0);
 
+	
 	// First section of the finger
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	glPushMatrix();
 	glRotatef(finger_current_angle, 0, 1, 0); // Rotate the first section
 	glPushMatrix();
@@ -1528,8 +1587,10 @@ void finger1() {
 	glTranslatef(0, -0.15, 0);
 	rect(0.6, 0.2, 0.4, style_gl);
 	glPopMatrix();
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	// Connection between sections
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
 	glPushMatrix();
 	glTranslatef(0.6, 0, 0.2);
 	glRotatef(90, 1, 0, 0);
@@ -1543,20 +1604,23 @@ void finger1() {
 	disk(0, 0.2, 20, 20, style_glu);
 	glPopMatrix();
 	glPopMatrix();
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	// Second section of the finger
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	glPushMatrix();
 	glTranslatef(0.7, -0.15, 0);
 	glRotatef(finger_current_angle, 0, 1, 0); // Rotate the second section
 	glColor3f(r, 0, 0);
 	rect(0.5, 0.2, 0.4, style_gl);
 	glPopMatrix();
-
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopMatrix(); // End of the first section
 }
 
 void finger2() {
 	// Base connection
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
 	glPushMatrix();
 	glColor3f(0, 0, 0);
 	cylinder(0.2, 0.2, 0.1, 20, 20, style_glu);
@@ -1568,8 +1632,10 @@ void finger2() {
 	disk(0, 0.2, 20, 20, style_glu);
 	glPopMatrix();
 	glPopMatrix();
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	// First section of the finger
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	glPushMatrix();
 	glTranslatef(0, 0, 0); // Move to the base connection pivot
 	glRotatef(finger_current_angle, 0, 0, -1); // Rotate the first section
@@ -1578,8 +1644,10 @@ void finger2() {
 	glTranslatef(0, -0.2, -0.05); // Translate to draw the first section
 	rect(0.4, 0.4, 0.2, style_gl);
 	glPopMatrix();
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	// Connection between first and second section
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
 	glPushMatrix();
 	glTranslatef(0.4, 0, 0); // Adjust translation for connection alignment
 	glColor3f(0, 0, 0);
@@ -1592,8 +1660,10 @@ void finger2() {
 	disk(0, 0.2, 20, 20, style_glu);
 	glPopMatrix();
 	glPopMatrix();
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	// Second section of the finger
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	glPushMatrix();
 	glTranslatef(0.4, 0, 0); // Move to the second section pivot
 	glRotatef(finger_current_angle, 0, 0, -1); // Rotate the second section
@@ -1602,8 +1672,10 @@ void finger2() {
 	glTranslatef(0, -0.2, -0.05); // Translate to draw the second section
 	rect(0.4, 0.4, 0.2, style_gl);
 	glPopMatrix();
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	// Connection between second and third section
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
 	glPushMatrix();
 	glTranslatef(0.4, 0, 0); // Adjust translation for connection alignment
 	glColor3f(0, 0, 0);
@@ -1616,8 +1688,10 @@ void finger2() {
 	disk(0, 0.2, 20, 20, style_glu);
 	glPopMatrix();
 	glPopMatrix();
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	// Third section of the finger
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	glPushMatrix();
 	glTranslatef(0.4, 0, 0); // Move to the third section pivot
 	glRotatef(finger_current_angle, 0, 0, -1); // Rotate the third section
@@ -1626,7 +1700,7 @@ void finger2() {
 	glTranslatef(0, -0.2, -0.05); // Translate to draw the third section
 	rect(0.4, 0.4, 0.2, style_gl);
 	glPopMatrix();
-
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopMatrix(); // Close third section
 	glPopMatrix(); // Close second section
 	glPopMatrix(); // Close first section
@@ -1635,24 +1709,28 @@ void finger2() {
 void hand() {
 	glPushMatrix();
 	glTranslatef(-5.2,0,0);
-
+	glBindTexture(GL_TEXTURE_2D, textureArr[2]);
 	glPushMatrix();
 	glColor3f(r, 0, b);
 	glTranslatef(8.2, 0.1, -0.5);
 	rect(1, 0.3, 1, style_gl);
 	glPopMatrix();
+	
 
 	glPushMatrix();
 	glTranslatef(8.2, -0.1, -0.5);
 	rect(0.5, 0.3, 1, style_gl);
 	glPopMatrix();
+	glBindTexture(GL_TEXTURE_2D, 0);
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
 	glPushMatrix();
 	glColor3f(0, g, 0);
 	glTranslatef(8.2, 0.4, -0.5);
 	glRotatef(-5,0,0,1);
 	rect(1.4, 0.1, 1, style_gl);
 	glPopMatrix();
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glPushMatrix();
 	glTranslatef(8.3, -0.1, 0.6);
@@ -1684,12 +1762,15 @@ void hand() {
 }
 
 void arm(bool left) {
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
 	glPushMatrix();
 	glColor3f(r, g, b);
 	glRotatef(90, 0, 1, 0);
 	cylinder(0.4, 0.4, 1.5, 10, 10, style_glu);
 	glPopMatrix();
+	glBindTexture(GL_TEXTURE_2D, 0);
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	glPushMatrix();
 	glColor3f(r, g, 0);
 	glTranslatef(0.9, -2, -1.5);
@@ -1701,16 +1782,17 @@ void arm(bool left) {
 	glTranslatef(0.9, -1.8, -0.5);
 	rect(0.3, 4, 2, style_gl);
 	glPopMatrix();
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glPushMatrix();
 	glScalef(0.8, 0.8, 0.8);
-
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
 	glPushMatrix();//join part
 	glColor3f(r, 0, 0);
 	glTranslatef(1.8, 0, 0);
 	sphere(0.6, 10, 10, style_glu);
 	glPopMatrix();
-
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	arm_upper(left);
 	
@@ -1728,10 +1810,8 @@ void arm(bool left) {
 			glTranslatef(3.4, -0.2, 2);
 			glRotatef(90, 1, 0, 0);
 			glScalef(5, 5, 5);
-			if (!styleSwitch)
-				weapon();
-			else
-				weaponLine();
+			
+			weapon();
 
 			glPopMatrix();
 
@@ -1749,16 +1829,23 @@ void arm(bool left) {
 }
 
 void body() {
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
 	body_upper();
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glPushMatrix();
 	glRotatef(body_current_angle,0,1,0);
+
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	cheast();
+	
 
 	glPushMatrix();
 	glScalef(-1, 1, 1);
 	cheast();
 	glPopMatrix();
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glPushMatrix();
 	glRotatef(180, 0, 1, 0);
@@ -1766,6 +1853,7 @@ void body() {
 	cheast_middle();
 	glPopMatrix();
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	glPushMatrix();
 	glScalef(1.5, 1.5, 1.5);
 	glPushMatrix();
@@ -1778,6 +1866,7 @@ void body() {
 	body_back();
 	glPopMatrix();
 	glPopMatrix();
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glPushMatrix();
 	glTranslatef(2.2,3.5,-0.5);
@@ -1944,7 +2033,8 @@ void drawCylinder(float baseR, float topR, float h)
 {
 	GLUquadricObj* cylinder = NULL;		//create quadric obj pointer
 	cylinder = gluNewQuadric();		//create quadric obj in the memory
-	gluQuadricDrawStyle(cylinder, GLU_FILL);
+	gluQuadricDrawStyle(cylinder, style_glu);
+	gluQuadricTexture(cylinder, textureSwitch);		//change texture if need
 	gluCylinder(cylinder, baseR, topR, h, 30, 30);
 	gluDeleteQuadric(cylinder);
 }
@@ -1953,7 +2043,7 @@ void drawLineCylinder(float baseR, float topR, float h)
 {
 	GLUquadricObj* cylinder = NULL;		//create quadric obj pointer
 	cylinder = gluNewQuadric();		//create quadric obj in the memory
-	gluQuadricDrawStyle(cylinder, GLU_LINE);
+	gluQuadricDrawStyle(cylinder, style_glu);
 	gluCylinder(cylinder, baseR, topR, h, 30, 30);
 	gluDeleteQuadric(cylinder);
 }
@@ -1963,232 +2053,134 @@ void drawHalfCylinder(float baseR, float topR, float length, float numSteps = 30
 	float a = 0.0f;
 	float step = /*6.2831852*/ 3.1415926 / numSteps;
 
-	glBegin(GL_TRIANGLE_STRIP);
+
+	glBegin(style_gl_curve);
 	for (int i = 0; i <= numSteps; ++i)
 	{
 		float x = (float)cos(a) * baseR;
 		float y = (float)sin(a) * baseR;
+		glTexCoord2f(i / numSteps, 0.0);
 		glVertex3f(x, y, 0.0f);
 
 		x = (float)cos(a) * topR;
 		y = (float)sin(a) * topR;
+		glTexCoord2f(i / numSteps, length);
 		glVertex3f(x, y, length);
 		a += step;
 	}
 	glEnd();
-}
 
-void drawHalfLineCylinder(float baseR, float topR, float length, float numSteps = 30)
-{
-	float a = 0.0f;
-	float step = /*6.2831852*/ 3.1415926 / numSteps;
-
-	glBegin(GL_LINE_STRIP);
-	for (int i = 0; i <= numSteps; ++i)
-	{
-		float x = (float)cos(a) * baseR;
-		float y = (float)sin(a) * baseR;
-		glVertex3f(x, y, 0.0f);
-
-		x = (float)cos(a) * topR;
-		y = (float)sin(a) * topR;
-		glVertex3f(x, y, length);
-		a += step;
-	}
-	glEnd();
 }
 
 void drawSphere(float radius)
 {
 	GLUquadricObj* sphere = NULL;		//create quadric obj pointer
 	sphere = gluNewQuadric();		//create quadric obj in the memory
-	gluQuadricDrawStyle(sphere, GLU_FILL);		//change to full color or draw line
-	gluQuadricTexture(sphere, false);		//disable texture
+	gluQuadricDrawStyle(sphere, style_glu);		//change to full color or draw line
+	gluQuadricTexture(sphere, textureSwitch);		//change texture if need
 	gluSphere(sphere, radius, 30, 10);		//draw a sphere
 	gluDeleteQuadric(sphere);
 }
 
-void drawLineSphere(float radius)
-{
-	GLUquadricObj* sphere = NULL;		//create quadric obj pointer
-	sphere = gluNewQuadric();		//create quadric obj in the memory
-	gluQuadricDrawStyle(sphere, GLU_LINE);		//change to full color or draw line
-	gluQuadricTexture(sphere, false);		//disable texture
-	gluSphere(sphere, radius, 30, 10);		//draw a sphere
-	gluDeleteQuadric(sphere);
-}
-
-void drawDisk(float inr, float outr, float slices = 30, float loops = 30)
-{
-	GLUquadricObj* disk = gluNewQuadric();
-	gluQuadricDrawStyle(disk, GLU_FILL);
-	gluDisk(disk, inr, outr, slices, loops);
-	gluDeleteQuadric(disk);
-}
-
-void drawLineDisk(float inr, float outr, float slices = 30, float loops = 30)
-{
-	GLUquadricObj* disk = gluNewQuadric();
-	gluQuadricDrawStyle(disk, GLU_LINE);
-	gluDisk(disk, inr, outr, slices, loops);
-	gluDeleteQuadric(disk);
-}
-
-void fourPointIrregularShape(fourIrregularPoint point, bool fill = true, bool oriColor = true,
+void fourPointIrregularShape(fourIrregularPoint point, bool fill = true, bool oriColor = true, 
 	color fC = { 0.9,0.9,0.9 }, color rC = { 0.9,0.9,0.9 }, color boC = { 0.9,0.9,0.9 },
-	color lC = { 0.9,0.9,0.9 }, color uC = { 0.9,0.9,0.9 }, color baC = { 0.9,0.9,0.9 })
+	color lC = { 0.9,0.9,0.9 }, color uC = { 0.9,0.9,0.9 }, color baC = { 0.9,0.9,0.9 } )
 {
-	if (oriColor)
+	if (fill)
 	{
-		if (fill)
+		glBegin(style_gl);
+
+		if (oriColor)
 		{
-			glBegin(GL_QUADS);
+			//front
+			glColor3f(red.r, red.g, red.b);		//red
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+
+			//right
+			glColor3f(green.r, green.g, green.b);		//green
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+
+			//bottom
+			glColor3f(blue.r, blue.g, blue.b);		//blue
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+
+			//left
+			glColor3f(yellow.r, yellow.g, yellow.b);		//yellow
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+
+			//up
+			glColor3f(magenta.r, magenta.g, magenta.b);		//magenta
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+
+			//back
+			glColor3f(cyan.r, cyan.g, cyan.b);		//cyan
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
 		}
-		else
+		
+		else if (!oriColor )
 		{
-			glBegin(GL_LINE_LOOP);
+			//front
+			glColor3f(fC.r, fC.g, fC.b);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+
+			//right
+			glColor3f(rC.r, rC.g, rC.b);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+
+			//bottom
+			glColor3f(boC.r, boC.g, boC.b);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glVertex3f(point.frd.x, point.frd.y, point.frd.z);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+
+			//left
+			glColor3f(lC.r, lC.g, lC.b);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glVertex3f(point.fld.x, point.fld.y, point.fld.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+
+			//up
+			glColor3f(uC.r, uC.g, uC.b);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
+			glVertex3f(point.flu.x, point.flu.y, point.flu.z);
+			glVertex3f(point.fru.x, point.fru.y, point.fru.z);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+
+			//back
+			glColor3f(baC.r, baC.g, baC.b);
+			glVertex3f(point.bru.x, point.bru.y, point.bru.z);
+			glVertex3f(point.brd.x, point.brd.y, point.brd.z);
+			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
+			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
 		}
 
-		//front
-		glColor3f(1.0, 0.0, 0.0);		//red
-		glVertex3f(point.fld.x, point.fld.y, point.fld.z);
-		glVertex3f(point.flu.x, point.flu.y, point.flu.z);
-		glVertex3f(point.fru.x, point.fru.y, point.fru.z);
-		glVertex3f(point.frd.x, point.frd.y, point.frd.z);
-
-		//right
-		glColor3f(0.0, 1.0, 0.0);		//green
-		glVertex3f(point.frd.x, point.frd.y, point.frd.z);
-		glVertex3f(point.fru.x, point.fru.y, point.fru.z);
-		glVertex3f(point.bru.x, point.bru.y, point.bru.z);
-		glVertex3f(point.brd.x, point.brd.y, point.brd.z);
-
-		//bottom
-		glColor3f(0.0, 0.0, 1.0);		//blue
-		glVertex3f(point.brd.x, point.brd.y, point.brd.z);
-		glVertex3f(point.frd.x, point.frd.y, point.frd.z);
-		glVertex3f(point.fld.x, point.fld.y, point.fld.z);
-		glVertex3f(point.bld.x, point.bld.y, point.bld.z);
-
-		//left
-		glColor3f(1.0, 1.0, 0.0);		//yellow
-		glVertex3f(point.bld.x, point.bld.y, point.bld.z);
-		glVertex3f(point.fld.x, point.fld.y, point.fld.z);
-		glVertex3f(point.flu.x, point.flu.y, point.flu.z);
-		glVertex3f(point.blu.x, point.blu.y, point.blu.z);
-
-		//up
-		glColor3f(1.0, 0.0, 1.0);		//magenta
-		glVertex3f(point.blu.x, point.blu.y, point.blu.z);
-		glVertex3f(point.flu.x, point.flu.y, point.flu.z);
-		glVertex3f(point.fru.x, point.fru.y, point.fru.z);
-		glVertex3f(point.bru.x, point.bru.y, point.bru.z);
-
-		//back
-		glColor3f(0.0, 1.0, 1.0);		//lime
-		glVertex3f(point.bru.x, point.bru.y, point.bru.z);
-		glVertex3f(point.brd.x, point.brd.y, point.brd.z);
-		glVertex3f(point.bld.x, point.bld.y, point.bld.z);
-		glVertex3f(point.blu.x, point.blu.y, point.blu.z);
-
-		glEnd();
 	}
-	else
-	{
-		if (fill)
-		{
-			glBegin(GL_QUADS);
-		}
-		else
-		{
-			glBegin(GL_LINE_LOOP);
-		}
-
-		//front
-		glColor3f(fC.r, fC.g, fC.b);
-		glVertex3f(point.fld.x, point.fld.y, point.fld.z);
-		glVertex3f(point.flu.x, point.flu.y, point.flu.z);
-		glVertex3f(point.fru.x, point.fru.y, point.fru.z);
-		glVertex3f(point.frd.x, point.frd.y, point.frd.z);
-
-		//right
-		glColor3f(rC.r, rC.g, rC.b);
-		glVertex3f(point.frd.x, point.frd.y, point.frd.z);
-		glVertex3f(point.fru.x, point.fru.y, point.fru.z);
-		glVertex3f(point.bru.x, point.bru.y, point.bru.z);
-		glVertex3f(point.brd.x, point.brd.y, point.brd.z);
-
-		//bottom
-		glColor3f(boC.r, boC.g, boC.b);
-		glVertex3f(point.brd.x, point.brd.y, point.brd.z);
-		glVertex3f(point.frd.x, point.frd.y, point.frd.z);
-		glVertex3f(point.fld.x, point.fld.y, point.fld.z);
-		glVertex3f(point.bld.x, point.bld.y, point.bld.z);
-
-		//left
-		glColor3f(lC.r, lC.g, lC.b);
-		glVertex3f(point.bld.x, point.bld.y, point.bld.z);
-		glVertex3f(point.fld.x, point.fld.y, point.fld.z);
-		glVertex3f(point.flu.x, point.flu.y, point.flu.z);
-		glVertex3f(point.blu.x, point.blu.y, point.blu.z);
-
-		//up
-		glColor3f(uC.r, uC.g, uC.b);
-		glVertex3f(point.blu.x, point.blu.y, point.blu.z);
-		glVertex3f(point.flu.x, point.flu.y, point.flu.z);
-		glVertex3f(point.fru.x, point.fru.y, point.fru.z);
-		glVertex3f(point.bru.x, point.bru.y, point.bru.z);
-
-		//back
-		glColor3f(baC.r, baC.g, baC.b);
-		glVertex3f(point.bru.x, point.bru.y, point.bru.z);
-		glVertex3f(point.brd.x, point.brd.y, point.brd.z);
-		glVertex3f(point.bld.x, point.bld.y, point.bld.z);
-		glVertex3f(point.blu.x, point.blu.y, point.blu.z);
-
-		glEnd();
-	}
-}
-
-void drawCube(float size)
-{
-	glBegin(GL_QUADS);
-	//Face 1: Bottom
-	glColor3f(1.0f, 0.0f, 0.0f);
-	glVertex3f(0.0f, 0.0f, size);
-	glVertex3f(size, 0.0f, size);
-	glVertex3f(size, 0.0f, 0.0f);
-	glVertex3f(0.0f, 0.0f, 0.0f);
-	//Face 2 : Left
-	glColor3f(0.0f, 1.0f, 0.0f);
-	glVertex3f(0.0f, 0.0f, 0.0f);
-	glVertex3f(0.0f, size, 0.0f);
-	glVertex3f(0.0f, size, size);
-	glVertex3f(0.0f, 0.0f, size);
-	//Face 3 : Front
-	glColor3f(0.0f, 0.0f, 1.0f);
-	glVertex3f(0.0f, 0.0f, size);
-	glVertex3f(0.0f, size, size);
-	glVertex3f(size, size, size);
-	glVertex3f(size, 0.0f, size);
-	//Face 4 : Right
-	glColor3f(1.0f, 1.0f, 0.0f);
-	glVertex3f(size, 0.0f, size);
-	glVertex3f(size, size, size);
-	glVertex3f(size, size, 0.0f);
-	glVertex3f(size, 0.0f, 0.0f);
-	//Face 5 : Back
-	glColor3f(0.0f, 1.0f, 1.0f);
-	glVertex3f(size, 0.0f, 0.0f);
-	glVertex3f(0.0f, 0.0f, 0.0f);
-	glVertex3f(0.0f, size, 0.0f);
-	glVertex3f(size, size, 0.0f);
-	//Face 6 : Top
-	glColor3f(1.0f, 0.0f, 1.0f);
-	glVertex3f(size, size, 0.0f);
-	glVertex3f(0.0f, size, 0.0f);
-	glVertex3f(0.0f, size, size);
-	glVertex3f(size, size, size);
 
 	glEnd();
 }
@@ -2197,39 +2189,25 @@ void drawCube(float size)
 void neck()
 {
 	glPushMatrix();
-	glTranslatef(0.0, -0.8, 0.8);
+	glTranslatef(0.0, -0.5, 0.6);
 	glRotatef(-120, 1.0, 0.0, 0.0);
+
 
 	//inner neck
 	glColor3f(0.18f, 0.18f, 0.18f);		//black-ish grey
-	drawCylinder(0.2, 0.1, 1.5);
+	drawCylinder(0.2, 0.1, 1.2);
 
 	//outer neck
 	glColor3f(1.0f, 0.7f, 0.0f);		//golden yellow
-	drawHalfCylinder(0.2, 0.175, 1.5, 30);
+	drawHalfCylinder(0.2, 0.175, 1.2, 30);
 
 	glPopMatrix();
 }
 
-void neckLine()
-{
-	glPushMatrix();
-	glTranslatef(0.0, -0.8, 0.8);
-	glRotatef(-120, 1.0, 0.0, 0.0);
-
-	//inner neck
-	glColor3f(0.18f, 0.18f, 0.18f);		//black-ish grey
-	drawLineCylinder(0.2, 0.1, 1.5);
-
-	//outer neck
-	glColor3f(1.0f, 0.7f, 0.0f);		//golden yellow
-	drawHalfLineCylinder(0.2, 0.175, 1.5, 30);
-
-	glPopMatrix();
-}
 
 void necklace()
 {
+
 	fourIrregularPoint point, another;
 
 	point.fld.x = -0.75, point.fld.y = -0.1, point.fld.z = 0;
@@ -2241,6 +2219,8 @@ void necklace()
 	point.blu.x = -0.825, point.blu.y = -0.03, point.blu.z = 0.15;
 	point.bru.x = -0.575, point.bru.y = 0.1, point.bru.z = 0.15;
 	point.brd.x = -0.55, point.brd.y = 0.09, point.brd.z = 0.15;
+
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 
 	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
 
@@ -2387,6 +2367,8 @@ void necklace()
 
 	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
 
+	glBindTexture(GL_TEXTURE_2D, 0);
+
 	//the left turbo
 	point.fld.x = -0.6, point.fld.y = 0.075, point.fld.z = -0.1;
 	point.flu.x = -0.625, point.flu.y = 0.25, point.flu.z = -0.1;
@@ -2397,6 +2379,8 @@ void necklace()
 	point.blu.x = -0.625, point.blu.y = 0.25, point.blu.z = 0.1;
 	point.bru.x = -0.325, point.bru.y = 0.375, point.bru.z = 0.1;
 	point.brd.x = -0.3, point.brd.y = 0.15, point.brd.z = 0.1;
+
+	glBindTexture(GL_TEXTURE_2D, textureArr[3]);
 
 	fourPointIrregularShape(point, true, false, lime, lime, lime, lime, lime, lime);
 
@@ -2438,218 +2422,10 @@ void necklace()
 	point.brd.x = 0.6, point.brd.y = 0.2, point.brd.z = 0.1;
 
 	fourPointIrregularShape(point, true, false, lime, lime, lime, lime, lime, lime);
-}
 
-void necklaceLine()
-{
-	fourIrregularPoint point, another;
+	glBindTexture(GL_TEXTURE_2D, 0);
 
-	point.fld.x = -0.75, point.fld.y = -0.1, point.fld.z = 0;
-	point.flu.x = -0.75, point.flu.y = -0.01, point.flu.z = 0;
-	point.fru.x = -0.575, point.fru.y = 0.1, point.fru.z = 0;
-	point.frd.x = -0.55, point.frd.y = 0.09, point.frd.z = 0;
 
-	point.bld.x = -0.825, point.bld.y = -0.15, point.bld.z = 0.15;
-	point.blu.x = -0.825, point.blu.y = -0.03, point.blu.z = 0.15;
-	point.bru.x = -0.575, point.bru.y = 0.1, point.bru.z = 0.15;
-	point.brd.x = -0.55, point.brd.y = 0.09, point.brd.z = 0.15;
-
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
-
-	point = setBaToFPoint(point);
-
-	point.bld.x = -0.775, point.bld.y = -0.15, point.bld.z = 0.4;
-	point.blu.x = -0.775, point.blu.y = -0.03, point.blu.z = 0.4;
-	point.bru.x = -0.575, point.bru.y = 0.1, point.bru.z = 0.25;
-	point.brd.x = -0.55, point.brd.y = 0.075, point.brd.z = 0.225;
-
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
-
-	point = setBaToFPoint(point);
-
-	point.bld.x = -0.7, point.bld.y = -0.15, point.bld.z = 0.5;
-	point.blu.x = -0.675, point.blu.y = -0.03, point.blu.z = 0.5;
-	point.bru.x = -0.475, point.bru.y = 0.1, point.bru.z = 0.25;
-	point.brd.x = -0.45, point.brd.y = 0.075, point.brd.z = 0.225;
-
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
-
-	//joint
-	point = setBaToFPoint(point);
-
-	point.bld.x = -0.375, point.bld.y = 0.1, point.bld.z = 0.5;
-	point.blu.x = -0.375, point.blu.y = 0.125, point.blu.z = 0.5;
-	point.bru.x = -0.35, point.bru.y = 0.125, point.bru.z = 0.15;
-	point.brd.x = -0.35, point.brd.y = 0.1, point.brd.z = 0.125;
-
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
-
-	another = setRToBaPoint(point);
-
-	//front to back view, we are in -z view to +z view
-	another.bld.x = -0.5, another.bld.y = 0.15, another.bld.z = 0;
-	another.blu.x = -0.475, another.blu.y = 0.175, another.blu.z = 0;
-	another.bru.x = -0.35, another.bru.y = 0.15, another.bru.z = 0;
-	another.brd.x = -0.35, another.brd.y = 0.125, another.brd.z = 0;
-
-	fourPointIrregularShape(another, false, false, purple, purple, purple, purple, purple, purple);
-
-	point = setLToFPoint(point);
-
-	point.bld.x = -0.7, point.bld.y = -0.05, point.bld.z = 0.75;
-	point.blu.x = -0.675, point.blu.y = 0.07, point.blu.z = 0.75;
-	point.bru.x = -0.375, point.bru.y = 0.2, point.bru.z = 0.75;
-	point.brd.x = -0.35, point.brd.y = 0.175, point.brd.z = 0.75;
-
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
-
-	point = setBaToFPoint(point);
-
-	point.bld.x = -0.575, point.bld.y = 0.05, point.bld.z = 1.375;
-	point.blu.x = -0.55, point.blu.y = 0.17, point.blu.z = 1.375;
-	point.bru.x = -0.325, point.bru.y = 0.3, point.bru.z = 1.0;
-	point.brd.x = -0.3, point.brd.y = 0.275, point.brd.z = 1.0;
-
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
-
-	point = setBaToFPoint(point);
-
-	point.bld.x = 0, point.bld.y = 0.15, point.bld.z = 1.675;
-	point.blu.x = 0, point.blu.y = 0.27, point.blu.z = 1.675;
-	point.bru.x = 0, point.bru.y = 0.4, point.bru.z = 1.25;
-	point.brd.x = 0, point.brd.y = 0.375, point.brd.z = 1.25;
-
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
-
-	//just mirror the left side
-	point.fld.x = 0.75, point.fld.y = -0.1, point.fld.z = 0;
-	point.flu.x = 0.75, point.flu.y = -0.01, point.flu.z = 0;
-	point.fru.x = 0.575, point.fru.y = 0.1, point.fru.z = 0;
-	point.frd.x = 0.55, point.frd.y = 0.09, point.frd.z = 0;
-
-	point.bld.x = 0.825, point.bld.y = -0.15, point.bld.z = 0.15;
-	point.blu.x = 0.825, point.blu.y = -0.03, point.blu.z = 0.15;
-	point.bru.x = 0.575, point.bru.y = 0.1, point.bru.z = 0.15;
-	point.brd.x = 0.55, point.brd.y = 0.09, point.brd.z = 0.15;
-
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
-
-	point = setBaToFPoint(point);
-
-	point.bld.x = 0.775, point.bld.y = -0.15, point.bld.z = 0.4;
-	point.blu.x = 0.775, point.blu.y = -0.03, point.blu.z = 0.4;
-	point.bru.x = 0.575, point.bru.y = 0.1, point.bru.z = 0.25;
-	point.brd.x = 0.55, point.brd.y = 0.075, point.brd.z = 0.225;
-
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
-
-	point = setBaToFPoint(point);
-
-	point.bld.x = 0.7, point.bld.y = -0.15, point.bld.z = 0.5;
-	point.blu.x = 0.675, point.blu.y = -0.03, point.blu.z = 0.5;
-	point.bru.x = 0.475, point.bru.y = 0.1, point.bru.z = 0.25;
-	point.brd.x = 0.45, point.brd.y = 0.075, point.brd.z = 0.225;
-
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
-
-	//joint
-	point = setBaToFPoint(point);
-
-	point.bld.x = 0.375, point.bld.y = 0.1, point.bld.z = 0.5;
-	point.blu.x = 0.375, point.blu.y = 0.125, point.blu.z = 0.5;
-	point.bru.x = 0.35, point.bru.y = 0.125, point.bru.z = 0.15;
-	point.brd.x = 0.35, point.brd.y = 0.1, point.brd.z = 0.125;
-
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
-
-	another = setRToBaPoint(point);
-
-	//front to back view, we are in -z view to +z view
-	another.bld.x = 0.5, another.bld.y = 0.15, another.bld.z = 0;
-	another.blu.x = 0.475, another.blu.y = 0.175, another.blu.z = 0;
-	another.bru.x = 0.35, another.bru.y = 0.15, another.bru.z = 0;
-	another.brd.x = 0.35, another.brd.y = 0.125, another.brd.z = 0;
-
-	fourPointIrregularShape(another, false, false, purple, purple, purple, purple, purple, purple);
-
-	point = setLToFPoint(point);
-
-	point.bld.x = 0.7, point.bld.y = -0.05, point.bld.z = 0.75;
-	point.blu.x = 0.675, point.blu.y = 0.07, point.blu.z = 0.75;
-	point.bru.x = 0.375, point.bru.y = 0.2, point.bru.z = 0.75;
-	point.brd.x = 0.35, point.brd.y = 0.175, point.brd.z = 0.75;
-
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
-
-	point = setBaToFPoint(point);
-
-	point.bld.x = 0.575, point.bld.y = 0.05, point.bld.z = 1.375;
-	point.blu.x = 0.55, point.blu.y = 0.17, point.blu.z = 1.375;
-	point.bru.x = 0.325, point.bru.y = 0.3, point.bru.z = 1.0;
-	point.brd.x = 0.3, point.brd.y = 0.275, point.brd.z = 1.0;
-
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
-
-	point = setBaToFPoint(point);
-
-	point.bld.x = 0, point.bld.y = 0.15, point.bld.z = 1.675;
-	point.blu.x = 0, point.blu.y = 0.27, point.blu.z = 1.675;
-	point.bru.x = 0, point.bru.y = 0.4, point.bru.z = 1.25;
-	point.brd.x = 0, point.brd.y = 0.375, point.brd.z = 1.25;
-
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
-
-	//the left turbo
-	point.fld.x = -0.6, point.fld.y = 0.075, point.fld.z = -0.1;
-	point.flu.x = -0.625, point.flu.y = 0.25, point.flu.z = -0.1;
-	point.fru.x = -0.325, point.fru.y = 0.375, point.fru.z = -0.1;
-	point.frd.x = -0.3, point.frd.y = 0.15, point.frd.z = -0.1;
-
-	point.bld.x = -0.6, point.bld.y = 0.075, point.bld.z = 0.1;
-	point.blu.x = -0.625, point.blu.y = 0.25, point.blu.z = 0.1;
-	point.bru.x = -0.325, point.bru.y = 0.375, point.bru.z = 0.1;
-	point.brd.x = -0.3, point.brd.y = 0.15, point.brd.z = 0.1;
-
-	fourPointIrregularShape(point, false, false, lime, lime, lime, lime, lime, lime);
-
-	//the right turbo
-	point.fld.x = 0.6, point.fld.y = 0.075, point.fld.z = -0.1;
-	point.flu.x = 0.625, point.flu.y = 0.25, point.flu.z = -0.1;
-	point.fru.x = 0.325, point.fru.y = 0.375, point.fru.z = -0.1;
-	point.frd.x = 0.3, point.frd.y = 0.15, point.frd.z = -0.1;
-
-	point.bld.x = 0.6, point.bld.y = 0.075, point.bld.z = 0.1;
-	point.blu.x = 0.625, point.blu.y = 0.25, point.blu.z = 0.1;
-	point.bru.x = 0.325, point.bru.y = 0.375, point.bru.z = 0.1;
-	point.brd.x = 0.3, point.brd.y = 0.15, point.brd.z = 0.1;
-
-	fourPointIrregularShape(point, false, false, lime, lime, lime, lime, lime, lime);
-
-	//left turbo wing
-	point.fld.x = -0.9, point.fld.y = 0.1, point.fld.z = -0.1;
-	point.flu.x = -0.9, point.flu.y = 0.125, point.flu.z = -0.1;
-	point.fru.x = -0.6, point.fru.y = 0.25, point.fru.z = -0.1;
-	point.frd.x = -0.6, point.frd.y = 0.2, point.frd.z = -0.1;
-
-	point.bld.x = -0.9, point.bld.y = 0.1, point.bld.z = 0.1;
-	point.blu.x = -0.9, point.blu.y = 0.125, point.blu.z = 0.1;
-	point.bru.x = -0.6, point.bru.y = 0.25, point.bru.z = 0.1;
-	point.brd.x = -0.6, point.brd.y = 0.2, point.brd.z = 0.1;
-
-	fourPointIrregularShape(point, false, false, lime, lime, lime, lime, lime, lime);
-
-	//right turbo wing
-	point.fld.x = 0.9, point.fld.y = 0.1, point.fld.z = -0.1;
-	point.flu.x = 0.9, point.flu.y = 0.125, point.flu.z = -0.1;
-	point.fru.x = 0.6, point.fru.y = 0.25, point.fru.z = -0.1;
-	point.frd.x = 0.6, point.frd.y = 0.2, point.frd.z = -0.1;
-
-	point.bld.x = 0.9, point.bld.y = 0.1, point.bld.z = 0.1;
-	point.blu.x = 0.9, point.blu.y = 0.125, point.blu.z = 0.1;
-	point.bru.x = 0.6, point.bru.y = 0.25, point.bru.z = 0.1;
-	point.brd.x = 0.6, point.brd.y = 0.2, point.brd.z = 0.1;
-
-	fourPointIrregularShape(point, false, false, lime, lime, lime, lime, lime, lime);
 }
 
 void brain()
@@ -2658,22 +2434,14 @@ void brain()
 
 	glTranslatef(0.0, 0.5, 0.675);
 
-	glColor3f(0.8, 0.8, 0.8);		//white-ish grey
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
+
+	glColor3f(0.8, 0.8, 0.8);		//white-ish grey
 	drawSphere(0.25);
 
-	glPopMatrix();
-}
+	glBindTexture(GL_TEXTURE_2D, 0);
 
-void brainLine()
-{
-	glPushMatrix();
-
-	glTranslatef(0.0, 0.5, 0.675);
-
-	glColor3f(0.8, 0.8, 0.8);		//white-ish grey
-
-	drawLineSphere(0.25);
 
 	glPopMatrix();
 }
@@ -2681,26 +2449,31 @@ void brainLine()
 void faceArmor()
 {
 	//lower part
-	glColor3f(purple.r, purple.g, purple.b);		//purple
-
 	glPushMatrix();
 
 	glTranslatef(0.0, 0.3, -0.1);
 	glRotatef(-90, 1.0, 0.0, 0.0);
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
+
+	glColor3f(purple.r, purple.g, purple.b);		//purple
 	drawHalfCylinder(0.3, 0.5, 0.1);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glPopMatrix();
 
 	//upper part
-	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark purple
-
 	glPushMatrix();
 
 	glTranslatef(0.0, 0.4, -0.1);
 	glRotatef(-90, 1.0, 0.0, 0.0);
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
+
+	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark purple
 	drawHalfCylinder(0.5, 0.3, 0.1);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glPopMatrix();
 
@@ -2716,9 +2489,12 @@ void faceArmor()
 	point.blu.x = -0.5, point.blu.y = 0.45, point.blu.z = 0.1;
 	point.bru.x = -0.3, point.bru.y = 0.55, point.bru.z = 0.1;
 	point.brd.x = -0.3, point.brd.y = 0.45, point.brd.z = 0.1;
+
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 
 	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
 
+
 	//right side extend
 	point.fld.x = 0.3, point.fld.y = 0.3, point.fld.z = -0.1;
 	point.flu.x = 0.5, point.flu.y = 0.4, point.flu.z = -0.1;
@@ -2729,87 +2505,49 @@ void faceArmor()
 	point.blu.x = 0.5, point.blu.y = 0.45, point.blu.z = 0.1;
 	point.bru.x = 0.3, point.bru.y = 0.55, point.bru.z = 0.1;
 	point.brd.x = 0.3, point.brd.y = 0.45, point.brd.z = 0.1;
+
+
 
 	fourPointIrregularShape(point, true, false, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple);
-}
 
-void faceArmorLine()
-{
-	//lower part
-	glColor3f(purple.r, purple.g, purple.b);		//purple
+	glBindTexture(GL_TEXTURE_2D, 0);
 
-	glPushMatrix();
-
-	glTranslatef(0.0, 0.3, -0.1);
-	glRotatef(-90, 1.0, 0.0, 0.0);
-
-	drawHalfLineCylinder(0.3, 0.5, 0.1);
-
-	glPopMatrix();
-
-	//upper part
-	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark purple
-
-	glPushMatrix();
-
-	glTranslatef(0.0, 0.4, -0.1);
-	glRotatef(-90, 1.0, 0.0, 0.0);
-
-	drawHalfLineCylinder(0.5, 0.3, 0.1);
-
-	glPopMatrix();
-
-	fourIrregularPoint point;
-
-	//left side extend
-	point.fld.x = -0.3, point.fld.y = 0.3, point.fld.z = -0.1;
-	point.flu.x = -0.5, point.flu.y = 0.4, point.flu.z = -0.1;
-	point.fru.x = -0.3, point.fru.y = 0.5, point.fru.z = -0.1;
-	point.frd.x = -0.3, point.frd.y = 0.4, point.frd.z = -0.1;
-
-	point.bld.x = -0.3, point.bld.y = 0.35, point.bld.z = 0.1;
-	point.blu.x = -0.5, point.blu.y = 0.45, point.blu.z = 0.1;
-	point.bru.x = -0.3, point.bru.y = 0.55, point.bru.z = 0.1;
-	point.brd.x = -0.3, point.brd.y = 0.45, point.brd.z = 0.1;
-
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
-
-	//right side extend
-	point.fld.x = 0.3, point.fld.y = 0.3, point.fld.z = -0.1;
-	point.flu.x = 0.5, point.flu.y = 0.4, point.flu.z = -0.1;
-	point.fru.x = 0.3, point.fru.y = 0.5, point.fru.z = -0.1;
-	point.frd.x = 0.3, point.frd.y = 0.4, point.frd.z = -0.1;
-
-	point.bld.x = 0.3, point.bld.y = 0.35, point.bld.z = 0.1;
-	point.blu.x = 0.5, point.blu.y = 0.45, point.blu.z = 0.1;
-	point.bru.x = 0.3, point.bru.y = 0.55, point.bru.z = 0.1;
-	point.brd.x = 0.3, point.brd.y = 0.45, point.brd.z = 0.1;
-
-	fourPointIrregularShape(point, false, false, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple);
 }
 
 void topArmor()
 {
-	glColor3f(purple.r, purple.g, purple.b);		//purple
 
 	//back piece
 	glPushMatrix();
 
 	glTranslatef(0.0, 0.575, 0.45);
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
+
+	glColor3f(purple.r, purple.g, purple.b);		//purple
 	drawHalfCylinder(0.3, 0.25, 0.5);
+
 
 	glPushMatrix();
 
 	glTranslatef(0.0, 0.0, 0.5);
 
+
+
+	glColor3f(purple.r, purple.g, purple.b);		//purple
 	drawHalfCylinder(0.25, 0.1, 0.2);
+
+
 
 	glPushMatrix();
 
 	glTranslatef(0.0, 0.0, 0.2);
 
+
+	glColor3f(purple.r, purple.g, purple.b);		//purple
 	drawHalfCylinder(0.1, 0.0, 0.05);
+
+
 
 	glPopMatrix();
 	glPopMatrix();
@@ -2820,20 +2558,24 @@ void topArmor()
 
 	glTranslatef(0.0, 0.575, -0.05);
 
+	glColor3f(purple.r, purple.g, purple.b);		//purple
 	drawHalfCylinder(0.2, 0.25, 0.6);
+
 
 	glPushMatrix();
 
 	glTranslatef(0.0, 0.0, -0.2);
 
+	glColor3f(purple.r, purple.g, purple.b);		//purple
 	drawHalfCylinder(0.1, 0.2, 0.2);
 
 	glPushMatrix();
 
 	glTranslatef(0.0, 0.0, -0.05);
 
+	glColor3f(purple.r, purple.g, purple.b);		//purple
 	drawHalfCylinder(0.0, 0.1, 0.05);
-
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopMatrix();
 	glPopMatrix();
 	glPopMatrix();
@@ -2843,9 +2585,13 @@ void topArmor()
 
 	glTranslatef(0.0, 0.575, 0.5);
 
-	glColor3f(black.r, black.g, black.b);		//black
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
+
+	glColor3f(black.r, black.g, black.b);		//black
 	drawHalfCylinder(0.0, 0.2825, 0.0);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glPopMatrix();
 
@@ -2861,6 +2607,8 @@ void topArmor()
 	point.blu.x = -0.3, point.blu.y = 0.65, point.blu.z = 0.55;
 	point.bru.x = -0.275, point.bru.y = 0.65, point.bru.z = 0.55;
 	point.brd.x = -0.3, point.brd.y = 0.4, point.brd.z = 0.35;
+
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 
 	fourPointIrregularShape(point, true, false, purple, purple, purple, purple, purple, purple);
 
@@ -2876,100 +2624,14 @@ void topArmor()
 	point.brd.x = 0.325, point.brd.y = 0.4, point.brd.z = 0.35;
 
 	fourPointIrregularShape(point, true, false, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple);
-}
 
-void topArmorLine()
-{
-	glColor3f(purple.r, purple.g, purple.b);		//purple
+	glBindTexture(GL_TEXTURE_2D, 0);
 
-	//back piece
-	glPushMatrix();
-
-	glTranslatef(0.0, 0.575, 0.45);
-
-	drawHalfLineCylinder(0.3, 0.25, 0.5);
-
-	glPushMatrix();
-
-	glTranslatef(0.0, 0.0, 0.5);
-
-	drawHalfLineCylinder(0.25, 0.1, 0.2);
-
-	glPushMatrix();
-
-	glTranslatef(0.0, 0.0, 0.2);
-
-	drawHalfLineCylinder(0.1, 0.0, 0.05);
-
-	glPopMatrix();
-	glPopMatrix();
-	glPopMatrix();
-
-	//front piece
-	glPushMatrix();
-
-	glTranslatef(0.0, 0.575, -0.05);
-
-	drawHalfLineCylinder(0.2, 0.25, 0.6);
-
-	glPushMatrix();
-
-	glTranslatef(0.0, 0.0, -0.2);
-
-	drawHalfLineCylinder(0.1, 0.2, 0.2);
-
-	glPushMatrix();
-
-	glTranslatef(0.0, 0.0, -0.05);
-
-	drawHalfLineCylinder(0.0, 0.1, 0.05);
-
-	glPopMatrix();
-	glPopMatrix();
-	glPopMatrix();
-
-	//the between
-	glPushMatrix();
-
-	glTranslatef(0.0, 0.575, 0.5);
-
-	glColor3f(black.r, black.g, black.b);		//black
-
-	drawHalfLineCylinder(0.0, 0.2825, 0.0);
-
-	glPopMatrix();
-
-	fourIrregularPoint point;
-
-	//left side lower
-	point.fld.x = -0.225, point.fld.y = 0.5, point.fld.z = 0.0;
-	point.flu.x = -0.1875, point.flu.y = 0.65, point.flu.z = 0.0;
-	point.fru.x = -0.175, point.fru.y = 0.65, point.fru.z = 0.0;
-	point.frd.x = -0.1875, point.frd.y = 0.5, point.frd.z = 0.0;
-
-	point.bld.x = -0.325, point.bld.y = 0.4, point.bld.z = 0.35;
-	point.blu.x = -0.3, point.blu.y = 0.65, point.blu.z = 0.55;
-	point.bru.x = -0.275, point.bru.y = 0.65, point.bru.z = 0.55;
-	point.brd.x = -0.3, point.brd.y = 0.4, point.brd.z = 0.35;
-
-	fourPointIrregularShape(point, false, false, purple, purple, purple, purple, purple, purple);
-
-	//right side lower
-	point.fld.x = 0.225, point.fld.y = 0.5, point.fld.z = 0.0;
-	point.flu.x = 0.1875, point.flu.y = 0.65, point.flu.z = 0.0;
-	point.fru.x = 0.175, point.fru.y = 0.65, point.fru.z = 0.0;
-	point.frd.x = 0.1875, point.frd.y = 0.5, point.frd.z = 0.0;
-
-	point.bld.x = 0.35, point.bld.y = 0.4, point.bld.z = 0.35;
-	point.blu.x = 0.325, point.blu.y = 0.65, point.blu.z = 0.55;
-	point.bru.x = 0.3, point.bru.y = 0.65, point.bru.z = 0.55;
-	point.brd.x = 0.325, point.brd.y = 0.4, point.brd.z = 0.35;
-
-	fourPointIrregularShape(point, false, false, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple, darkPurple);
 }
 
 void eyes()
 {
+
 	fourIrregularPoint point;
 
 	//left eye
@@ -2983,7 +2645,11 @@ void eyes()
 	point.bru.x = -0.1, point.bru.y = 0.65, point.bru.z = 0.15;
 	point.brd.x = -0.1, point.brd.y = 0.4, point.brd.z = 0.15;
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[2]);
+
 	fourPointIrregularShape(point, true, false, black, black, black, black, black, black);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	//left eye ball
 
@@ -2997,7 +2663,12 @@ void eyes()
 	point.bru.x = -0.1125, point.bru.y = 0.625, point.bru.z = -0.1;
 	point.brd.x = -0.2125, point.brd.y = 0.525, point.brd.z = -0.1;
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[3]);
+
 	fourPointIrregularShape(point, true, false, white, white, white, white, white, white);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
 
 	//right eye
 	point.fld.x = 0.3, point.fld.y = 0.45, point.fld.z = -0.3;
@@ -3010,7 +2681,12 @@ void eyes()
 	point.bru.x = 0.1, point.bru.y = 0.65, point.bru.z = 0.15;
 	point.brd.x = 0.1, point.brd.y = 0.4, point.brd.z = 0.15;
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[2]);
+
 	fourPointIrregularShape(point, true, false, black, black, black, black, black, black);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
 
 	//right eye ball
 
@@ -3024,7 +2700,11 @@ void eyes()
 	point.bru.x = 0.1125, point.bru.y = 0.625, point.bru.z = -0.1;
 	point.brd.x = 0.2125, point.brd.y = 0.525, point.brd.z = -0.1;
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[3]);
+
 	fourPointIrregularShape(point, true, false, white, white, white, white, white, white);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	//eye side
 	glPushMatrix();
@@ -3032,10 +2712,13 @@ void eyes()
 	glTranslatef(0.0, 0.4, 0.0);
 	glRotatef(-90, 1.0, 0.0, 0.0);
 
-	glColor3f(purple.r, purple.g, purple.b);		//purple
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 
+	glColor3f(purple.r, purple.g, purple.b);		//purple
 	drawHalfCylinder(0.5, 0.1, 0.2);
 
+	glBindTexture(GL_TEXTURE_2D, 0);
+
 	glPopMatrix();
 
 	//eye middle
@@ -3044,202 +2727,93 @@ void eyes()
 	glTranslatef(0.0, 0.4, -0.2);
 	glRotatef(-90, 1.0, 0.0, 0.0);
 
-	glColor3f(purple.r, purple.g, purple.b);		//purple
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 
+	glColor3f(purple.r, purple.g, purple.b);		//purple
 	drawHalfCylinder(0.35, 0.0, 0.2);
 
-	glPopMatrix();
-}
-
-void eyesLine()
-{
-	fourIrregularPoint point;
-
-	//left eye
-	point.fld.x = -0.3, point.fld.y = 0.45, point.fld.z = -0.3;
-	point.flu.x = -0.05, point.flu.y = 0.55, point.flu.z = -0.3;
-	point.fru.x = -0.025, point.fru.y = 0.6, point.fru.z = -0.3;
-	point.frd.x = -0.025, point.frd.y = 0.45, point.frd.z = -0.3;
-
-	point.bld.x = -0.3, point.bld.y = 0.4, point.bld.z = 0.15;
-	point.blu.x = -0.125, point.blu.y = 0.65, point.blu.z = 0.15;
-	point.bru.x = -0.1, point.bru.y = 0.65, point.bru.z = 0.15;
-	point.brd.x = -0.1, point.brd.y = 0.4, point.brd.z = 0.15;
-
-	fourPointIrregularShape(point, false, false, black, black, black, black, black, black);
-
-	//left eye ball
-
-	point.fld.x = -0.2125, point.fld.y = 0.475, point.fld.z = -0.3;
-	point.flu.x = -0.0625, point.flu.y = 0.525, point.flu.z = -0.3;
-	point.fru.x = -0.0625, point.fru.y = 0.525, point.fru.z = -0.3;
-	point.frd.x = -0.2125, point.frd.y = 0.475, point.frd.z = -0.3;
-
-	point.bld.x = -0.2125, point.bld.y = 0.525, point.bld.z = -0.1;
-	point.blu.x = -0.1125, point.blu.y = 0.625, point.blu.z = -0.1;
-	point.bru.x = -0.1125, point.bru.y = 0.625, point.bru.z = -0.1;
-	point.brd.x = -0.2125, point.brd.y = 0.525, point.brd.z = -0.1;
-
-	fourPointIrregularShape(point, false, false, white, white, white, white, white, white);
-
-	//right eye
-	point.fld.x = 0.3, point.fld.y = 0.45, point.fld.z = -0.3;
-	point.flu.x = 0.05, point.flu.y = 0.55, point.flu.z = -0.3;
-	point.fru.x = 0.025, point.fru.y = 0.6, point.fru.z = -0.3;
-	point.frd.x = 0.025, point.frd.y = 0.45, point.frd.z = -0.3;
-
-	point.bld.x = 0.3, point.bld.y = 0.4, point.bld.z = 0.15;
-	point.blu.x = 0.125, point.blu.y = 0.65, point.blu.z = 0.15;
-	point.bru.x = 0.1, point.bru.y = 0.65, point.bru.z = 0.15;
-	point.brd.x = 0.1, point.brd.y = 0.4, point.brd.z = 0.15;
-
-	fourPointIrregularShape(point, false, false, black, black, black, black, black, black);
-
-	//right eye ball
-
-	point.fld.x = 0.2125, point.fld.y = 0.475, point.fld.z = -0.3;
-	point.flu.x = 0.0625, point.flu.y = 0.525, point.flu.z = -0.3;
-	point.fru.x = 0.0625, point.fru.y = 0.525, point.fru.z = -0.3;
-	point.frd.x = 0.2125, point.frd.y = 0.475, point.frd.z = -0.3;
-
-	point.bld.x = 0.2125, point.bld.y = 0.525, point.bld.z = -0.1;
-	point.blu.x = 0.1125, point.blu.y = 0.625, point.blu.z = -0.1;
-	point.bru.x = 0.1125, point.bru.y = 0.625, point.bru.z = -0.1;
-	point.brd.x = 0.2125, point.brd.y = 0.525, point.brd.z = -0.1;
-
-	fourPointIrregularShape(point, false, false, white, white, white, white, white, white);
-
-	//eye side
-	glPushMatrix();
-
-	glTranslatef(0.0, 0.4, 0.0);
-	glRotatef(-90, 1.0, 0.0, 0.0);
-
-	glColor3f(purple.r, purple.g, purple.b);		//purple
-
-	drawHalfLineCylinder(0.5, 0.1, 0.2);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glPopMatrix();
 
-	//eye middle
-	glPushMatrix();
-
-	glTranslatef(0.0, 0.4, -0.2);
-	glRotatef(-90, 1.0, 0.0, 0.0);
-
-	glColor3f(purple.r, purple.g, purple.b);		//purple
-
-	drawHalfLineCylinder(0.35, 0.0, 0.2);
-
-	glPopMatrix();
 }
 
 void mouth()
 {
-	glColor3f(0.8, 0.8, 0.8);		//white-ish, grey
 
 	glPushMatrix();
 
 	glTranslatef(0.0, -0.1, -0.1);
 	glRotatef(-90, 1.0, 0.0, 0.0);
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[2]);
+
+	glColor3f(0.8, 0.8, 0.8);		//white-ish, grey
 	drawHalfCylinder(0.0, 0.3, 0.4);
 
-	glPopMatrix();
-}
-
-void mouthLine()
-{
-	glColor3f(0.8, 0.8, 0.8);		//white-ish, grey
-
-	glPushMatrix();
-
-	glTranslatef(0.0, -0.1, -0.1);
-	glRotatef(-90, 1.0, 0.0, 0.0);
-
-	drawHalfLineCylinder(0.0, 0.3, 0.4);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glPopMatrix();
+
 }
 
 void corn()
 {
-	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark purple
 
 	glPushMatrix();
 
 	glTranslatef(0.0, 0.6, -0.2);
 	glRotatef(250.0, 1.0, 0.0, 0.0);
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
+
+	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark purple
 	drawCylinder(0.05, 0.025, 0.75);
 
-	glColor3f(lime.r, lime.g, lime.b);		//lime
+	glBindTexture(GL_TEXTURE_2D, 0);
+
 
 	glPushMatrix();
 
 	glTranslatef(0.0, 0.0, 0.1875);
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[3]);
+
+	glColor3f(lime.r, lime.g, lime.b);		//lime
 	drawCylinder(0.05, 0.05, 0.1875);
 
-	glPopMatrix();
+	glBindTexture(GL_TEXTURE_2D, 0);
 
-	glColor3f(purple.r, purple.g, purple.b);		//purple
+	glPopMatrix();
 
 	glPushMatrix();
 
 	glTranslatef(0.0, 0.0, 0.75);
 
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
+
+	glColor3f(purple.r, purple.g, purple.b);		//purple
 	drawCylinder(0.025, 0.0, 0.0);
 
-	glPopMatrix();
-	glPopMatrix();
-}
-
-void cornLine()
-{
-	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark purple
-
-	glPushMatrix();
-
-	glTranslatef(0.0, 0.6, -0.2);
-	glRotatef(250.0, 1.0, 0.0, 0.0);
-
-	drawLineCylinder(0.05, 0.025, 0.75);
-
-	glColor3f(lime.r, lime.g, lime.b);		//lime
-
-	glPushMatrix();
-
-	glTranslatef(0.0, 0.0, 0.1875);
-
-	drawLineCylinder(0.05, 0.05, 0.1875);
-
-	glPopMatrix();
-
-	glColor3f(purple.r, purple.g, purple.b);		//purple
-
-	glPushMatrix();
-
-	glTranslatef(0.0, 0.0, 0.75);
-
-	drawLineCylinder(0.025, 0.0, 0.0);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glPopMatrix();
 	glPopMatrix();
+
 }
 
 void weapon()
 {
-	glColor3f(lime.r, lime.g, lime.b);
-
 	//bottom spike lower
 	glPushMatrix();
 
 	glTranslatef(0.0, -3.65, 0.0);
 	glRotatef(-90, 1.0, 0.0, 0.0);
 
+	glColor3f(lime.r, lime.g, lime.b);		//lime
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	drawCylinder(0.0, 0.1, 0.15);
-
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopMatrix();
 
 	//bottom spike upper
@@ -3247,12 +2821,12 @@ void weapon()
 
 	glTranslatef(0.0, -3.5, 0.0);
 	glRotatef(-90, 1.0, 0.0, 0.0);
-
+	glColor3f(lime.r, lime.g, lime.b);		//lime
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	drawCylinder(0.1, 0.0, 0.15);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glPopMatrix();
-
-	glColor3f(purple.r, purple.g, purple.b);
 
 	//handle
 	glPushMatrix();
@@ -3260,7 +2834,10 @@ void weapon()
 	glTranslatef(0.0, -3.5, 0.0);
 	glRotatef(-90, 1.0, 0.0, 0.0);
 
+	glColor3f(purple.r, purple.g, purple.b);		//purple
+	glBindTexture(GL_TEXTURE_2D, textureArr[2]);
 	drawCylinder(0.05, 0.05, 3.5);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glPopMatrix();
 
@@ -3270,20 +2847,33 @@ void weapon()
 	glRotatef(-90, 0.0, 1.0, 0.0);
 	glRotatef(-45, 1.0, 0.0, 0.0);
 
-	glColor3f(lime.r, lime.g, lime.b);
+	
+
+	glColor3f(lime.r, lime.g, lime.b);		//lime
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
 	drawSphere(0.075);
-	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	
+	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark pruple
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	drawCylinder(0.05, 0.1, 0.3);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	
 
 	glPushMatrix();
 
 	glTranslatef(0.0, 0.0, 0.3);
 	glRotatef(-56.25, 1.0, 0.0, 0.0);
 
-	glColor3f(lime.r, lime.g, lime.b);
+	
+	glColor3f(lime.r, lime.g, lime.b);		//lime
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
 	drawSphere(0.1);
-	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark pruple
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	drawCylinder(0.1, 0.0, 0.5);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glPopMatrix();
 	glPopMatrix();
@@ -3293,174 +2883,72 @@ void weapon()
 
 	glRotatef(-90, 0.0, 1.0, 0.0);
 	glRotatef(-135, 1.0, 0.0, 0.0);
-
-	glColor3f(lime.r, lime.g, lime.b);
+	glColor3f(lime.r, lime.g, lime.b);		//lime
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
 	drawSphere(0.075);
-	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark pruple
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	drawCylinder(0.05, 0.1, 0.3);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glPushMatrix();
 
 	glTranslatef(0.0, 0.0, 0.3);
 	glRotatef(56.25, 1.0, 0.0, 0.0);
 
-	glColor3f(lime.r, lime.g, lime.b);
+	glColor3f(lime.r, lime.g, lime.b);		//lime
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
 	drawSphere(0.1);
-	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark pruple
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	drawCylinder(0.1, 0.0, 0.5);
-
-	glPopMatrix();
-	glPopMatrix();
-}
-
-void weaponLine()
-{
-	glColor3f(lime.r, lime.g, lime.b);
-
-	//bottom spike lower
-	glPushMatrix();
-
-	glTranslatef(0.0, -3.65, 0.0);
-	glRotatef(-90, 1.0, 0.0, 0.0);
-
-	drawLineCylinder(0.0, 0.1, 0.15);
-
-	glPopMatrix();
-
-	//bottom spike upper
-	glPushMatrix();
-
-	glTranslatef(0.0, -3.5, 0.0);
-	glRotatef(-90, 1.0, 0.0, 0.0);
-
-	drawLineCylinder(0.1, 0.0, 0.15);
-
-	glPopMatrix();
-
-	glColor3f(purple.r, purple.g, purple.b);
-
-	//handle
-	glPushMatrix();
-
-	glTranslatef(0.0, -3.5, 0.0);
-	glRotatef(-90, 1.0, 0.0, 0.0);
-
-	drawLineCylinder(0.05, 0.05, 3.5);
-
-	glPopMatrix();
-
-	//left joint
-	glPushMatrix();
-
-	glRotatef(-90, 0.0, 1.0, 0.0);
-	glRotatef(-45, 1.0, 0.0, 0.0);
-
-	glColor3f(lime.r, lime.g, lime.b);
-	drawLineSphere(0.075);
-	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);
-	drawLineCylinder(0.05, 0.1, 0.3);
-
-	glPushMatrix();
-
-	glTranslatef(0.0, 0.0, 0.3);
-	glRotatef(-56.25, 1.0, 0.0, 0.0);
-
-	glColor3f(lime.r, lime.g, lime.b);
-	drawLineSphere(0.1);
-	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);
-	drawLineCylinder(0.1, 0.0, 0.5);
+	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glPopMatrix();
 	glPopMatrix();
 
-	//right joint
-	glPushMatrix();
-
-	glRotatef(-90, 0.0, 1.0, 0.0);
-	glRotatef(-135, 1.0, 0.0, 0.0);
-
-	glColor3f(lime.r, lime.g, lime.b);
-	drawLineSphere(0.075);
-	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);
-	drawLineCylinder(0.05, 0.1, 0.3);
-
-	glPushMatrix();
-
-	glTranslatef(0.0, 0.0, 0.3);
-	glRotatef(56.25, 1.0, 0.0, 0.0);
-
-	glColor3f(lime.r, lime.g, lime.b);
-	drawLineSphere(0.1);
-	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);
-	drawLineCylinder(0.1, 0.0, 0.5);
-
-	glPopMatrix();
-	glPopMatrix();
 }
 
 void head() {
-	if (!styleSwitch) {
-		glPushMatrix();
-		glTranslatef(0.0, -0.5, -0.25);
 
-		neck();
-		glPushMatrix();
-		glRotatef(head_current_angle,0,1,0);
-		necklace();
+	glPushMatrix();
+	glTranslatef(0.0, -0.5, -0.25);
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
+	neck();
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glPushMatrix();
+	glRotatef(head_current_angle, 0, 1, 0);
+	necklace();
 
-		faceArmor();
+	faceArmor();
 
-		glPushMatrix();
+	glPushMatrix();
 
-		glRotatef(-5, 1.0, 0.0, 0.0);
+	glRotatef(-5, 1.0, 0.0, 0.0);
 
-		brain();
+	brain();
 
-		topArmor();
+	topArmor();
 
-		corn();
+	corn();
 
-		glPopMatrix();
+	glPopMatrix();
 
-		eyes();
+	eyes();
 
-		mouth();
-		glPopMatrix();
-		glPopMatrix();
-	}
-	else {
-		glPushMatrix();
-		glTranslatef(0.0, -0.5, -0.25);
+	mouth();
+	glPopMatrix();
+	glPopMatrix();
 
-		neckLine();
-		glPushMatrix();
-		glRotatef(head_current_angle, 0, 1, 0);
-		necklaceLine();
-
-		faceArmorLine();
-
-		glPushMatrix();
-
-		glRotatef(-5, 1.0, 0.0, 0.0);
-
-		brainLine();
-
-		topArmorLine();
-
-		cornLine();
-
-		glPopMatrix();
-
-		eyesLine();
-
-		mouthLine();
-		glPopMatrix();
-		glPopMatrix();
-	}
 }
 //------------head end----------------------
 
 //----------body bottom-------------------
+
+//Soft variable for lower body - front plate
+
 float lowerBodyFrontUpperPlateX1 = 1.2, lowerBodyFrontUpperPlateX2 = 1,
 lowerBodyFrontUpperPlateY1 = 0.5, lowerBodyFrontUpperPlateY2 = 0.2,
 lowerBodyFrontUpperPlateZ = 0.1;
@@ -3484,7 +2972,7 @@ float frontPlateBackHexagon[6][3] = {
 };
 
 float lowerBodyFrontLowerPlateX1 = 1,
-lowerBodyFrontLowerPlateY1 = 1.0, lowerBodyFrontLowerPlateY2 = 0.2,
+lowerBodyFrontLowerPlateY1 = 1.5, lowerBodyFrontLowerPlateY2 = 0.4,
 lowerBodyFrontLowerPlateZ = 0.1;
 
 float frontPlateFrontPentagon[5][3] = {
@@ -3503,33 +2991,51 @@ float frontPlateBackPentagon[5][3] = {
 	{-lowerBodyFrontLowerPlateX1, -lowerBodyFrontLowerPlateY2, -lowerBodyFrontLowerPlateZ}
 };
 
+//Soft variable for lower body - tiny prism
+
+float waistPrismX = 0.1,
+waistPrismY = 0.1,
+waistPrismZ = 0.4;
+
+float side1Prism[3][3] = {
+	{0, waistPrismY, waistPrismZ},
+	{waistPrismX, 0, waistPrismZ},
+	{-waistPrismX, 0, waistPrismZ}
+};
+
+float side2Prism[3][3] = {
+	{0, waistPrismY, -waistPrismZ},
+	{waistPrismX, 0, -waistPrismZ},
+	{-waistPrismX, 0, -waistPrismZ}
+};
+
 //Soft variable for lower body - back plate
 
-float lowerBodyBackUpperPlateX1 = 0.6, lowerBodyBackUpperPlateX2 = 0.2,
-lowerBodyBackUpperPlateY1 = 0.6, lowerBodyBackUpperPlateY2 = 0.0,
-lowerBodyBackUpperPlateZ = 0.1;
+float lowerBodyBackUpperPlateX1 = 0.9, lowerBodyBackUpperPlateX2 = 0.75, lowerBodyBackUpperPlateX3 = 0.2,
+lowerBodyBackUpperPlateY1 = 0.8, lowerBodyBackUpperPlateY2 = 0.2,
+lowerBodyBackUpperPlateZ = 0.15;
 
 float backPlateFrontHexagon[6][3] = {
-	{-lowerBodyBackUpperPlateX2, lowerBodyBackUpperPlateY1, lowerBodyBackUpperPlateZ},
-	{lowerBodyBackUpperPlateX2, lowerBodyBackUpperPlateY1, lowerBodyBackUpperPlateZ},
-	{lowerBodyBackUpperPlateX1, lowerBodyBackUpperPlateY2, lowerBodyBackUpperPlateZ},
+	{-lowerBodyBackUpperPlateX3, lowerBodyBackUpperPlateY1, lowerBodyBackUpperPlateZ},
+	{lowerBodyBackUpperPlateX3, lowerBodyBackUpperPlateY1, lowerBodyBackUpperPlateZ},
+	{lowerBodyBackUpperPlateX2, lowerBodyBackUpperPlateY2, lowerBodyBackUpperPlateZ},
 	{lowerBodyBackUpperPlateX1, -lowerBodyBackUpperPlateY1, lowerBodyBackUpperPlateZ},
 	{-lowerBodyBackUpperPlateX1, -lowerBodyBackUpperPlateY1, lowerBodyBackUpperPlateZ},
-	{-lowerBodyBackUpperPlateX1, lowerBodyBackUpperPlateY2, lowerBodyBackUpperPlateZ}
+	{-lowerBodyBackUpperPlateX2, lowerBodyBackUpperPlateY2, lowerBodyBackUpperPlateZ}
 };
 
 float backPlateBackHexagon[6][3] = {
-	{-lowerBodyBackUpperPlateX2, lowerBodyBackUpperPlateY1, -lowerBodyBackUpperPlateZ},
-	{lowerBodyBackUpperPlateX2, lowerBodyBackUpperPlateY1, -lowerBodyBackUpperPlateZ},
-	{lowerBodyBackUpperPlateX1, lowerBodyBackUpperPlateY2, -lowerBodyBackUpperPlateZ},
+	{-lowerBodyBackUpperPlateX3, lowerBodyBackUpperPlateY1, -lowerBodyBackUpperPlateZ},
+	{lowerBodyBackUpperPlateX3, lowerBodyBackUpperPlateY1, -lowerBodyBackUpperPlateZ},
+	{lowerBodyBackUpperPlateX2, lowerBodyBackUpperPlateY2, -lowerBodyBackUpperPlateZ},
 	{lowerBodyBackUpperPlateX1, -lowerBodyBackUpperPlateY1, -lowerBodyBackUpperPlateZ},
 	{-lowerBodyBackUpperPlateX1, -lowerBodyBackUpperPlateY1, -lowerBodyBackUpperPlateZ},
-	{-lowerBodyBackUpperPlateX1, lowerBodyBackUpperPlateY2, -lowerBodyBackUpperPlateZ}
+	{-lowerBodyBackUpperPlateX2, lowerBodyBackUpperPlateY2, -lowerBodyBackUpperPlateZ}
 };
 
-float lowerBodyBackLowerPlateX1 = 1.5, lowerBodyBackLowerPlateX2 = 1.25,
-lowerBodyBackLowerPlateY1 = 1.5, lowerBodyBackLowerPlateY2 = 0.2,
-lowerBodyBackLowerPlateZ = 0.1;
+float lowerBodyBackLowerPlateX1 = 2, lowerBodyBackLowerPlateX2 = 1.5,
+lowerBodyBackLowerPlateY1 = 1.75, lowerBodyBackLowerPlateY2 = 0.5,
+lowerBodyBackLowerPlateZ = 0.15;
 
 float backPlateFrontPentagon[5][3] = {
 	{-lowerBodyBackLowerPlateX1, lowerBodyBackLowerPlateY1, lowerBodyBackLowerPlateZ},
@@ -3545,6 +3051,30 @@ float backPlateBackPentagon[5][3] = {
 	{lowerBodyBackLowerPlateX2, -lowerBodyBackLowerPlateY2, -lowerBodyBackLowerPlateZ},
 	{0, -lowerBodyBackLowerPlateY1, -lowerBodyBackLowerPlateZ},
 	{-lowerBodyBackLowerPlateX2, -lowerBodyBackLowerPlateY2, -lowerBodyBackLowerPlateZ}
+};
+
+//Soft variable for lower body - buttock plate
+
+float buttockPlateX1 = 0.5, buttockPlateX2 = 0.25,
+buttockPlateY = 0.75,
+buttockPlateZ = 0.3;
+
+float buttockFrontPlate[6][3] = {
+	{-buttockPlateX2, buttockPlateY, buttockPlateZ},
+	{buttockPlateX2, buttockPlateY, buttockPlateZ},
+	{buttockPlateX1, 0, buttockPlateZ},
+	{buttockPlateX2, -buttockPlateY, buttockPlateZ},
+	{-buttockPlateX2, -buttockPlateY, buttockPlateZ},
+	{-buttockPlateX1, 0, buttockPlateZ}
+};
+
+float buttockBackPlate[6][3] = {
+	{-buttockPlateX2, buttockPlateY, -buttockPlateZ},
+	{buttockPlateX2, buttockPlateY, -buttockPlateZ},
+	{buttockPlateX1, 0, -buttockPlateZ},
+	{buttockPlateX2, -buttockPlateY, -buttockPlateZ},
+	{-buttockPlateX2, -buttockPlateY, -buttockPlateZ},
+	{-buttockPlateX1, 0, -buttockPlateZ}
 };
 
 //Soft variable for lower body - thigh middle plate
@@ -3646,7 +3176,7 @@ float calfArmorSideBack[3][3] = {
 //Soft variable for lower body - front upper and lower leg
 
 float frontLegX1 = 2, frontLegX2 = 0.5,
-frontLegY1 = 1.5, frontLegY2 = 0.2,
+frontLegY1 = 1.25, frontLegY2 = 0.2,
 frontLegZ1 = 0.75, frontLegZ2 = 0.5;
 
 float frontLowerSide1Leg[4][3] = {
@@ -3678,7 +3208,7 @@ float frontUpperSide2Leg[3][3] = {
 //Soft variable for lower body - back leg
 
 float backLegX1 = 0.5, backLegX2 = 0.25,
-backLegY = 1.5,
+backLegY = 1.25,
 backLegZ = 0.75;
 
 float backSide1Leg[5][3] = {
@@ -3696,32 +3226,64 @@ float backSide2Leg[5][3] = {
 	{backLegX2, -backLegY, -backLegZ},
 	{-backLegX1, -backLegY, -backLegZ} };
 
+
+
 void polygonPlate(int noOfSide, GLfloat frontPolygon[][3], GLfloat backPolygon[][3])
 {
+	// Calculate the centroid for the front and back polygons
+	GLfloat frontCentroid[2] = { 0.0f, 0.0f };
+	GLfloat backCentroid[2] = { 0.0f, 0.0f };
+
+	// Calculate the centroid of the front polygon
+	for (int i = 0; i < noOfSide; ++i) {
+		frontCentroid[0] += frontPolygon[i][0];
+		frontCentroid[1] += frontPolygon[i][1];
+	}
+	frontCentroid[0] /= noOfSide;
+	frontCentroid[1] /= noOfSide;
+
+	// Calculate the centroid of the back polygon
+	for (int i = 0; i < noOfSide; ++i) {
+		backCentroid[0] += backPolygon[i][0];
+		backCentroid[1] += backPolygon[i][1];
+	}
+	backCentroid[0] /= noOfSide;
+	backCentroid[1] /= noOfSide;
+
 	//Draw front
-	glBegin(style_gl);
+	glBegin(polygonFaceGLStyle);
 	//glColor3f(1.0f, 0.0f, 0.0f); // Red
 	for (int i = 0; i < noOfSide; ++i) {
+		GLfloat u = (frontPolygon[i][0] - frontCentroid[0]) * 0.5f + 0.5f;  // Normalize
+		GLfloat v = (frontPolygon[i][1] - frontCentroid[1]) * 0.5f + 0.5f;  // Normalize
+		glTexCoord2f(u, v);
 		glVertex3fv(frontPolygon[i]);
 	}
 	glEnd();
 
 	// Draw back
-	glBegin(style_gl);
+	glBegin(polygonFaceGLStyle);
 	//glColor3f(0.0f, 1.0f, 0.0f); // Green
 	for (int i = 0; i < noOfSide; ++i) {
+		GLfloat u = (backPolygon[i][0] - backCentroid[0]) * 0.5f + 0.5f;  // Normalize
+		GLfloat v = (backPolygon[i][1] - backCentroid[1]) * 0.5f + 0.5f;  // Normalize
+		glTexCoord2f(u, v);
 		glVertex3fv(backPolygon[i]);
 	}
 	glEnd();
 
 	// Draw sides
-	glBegin(style_gl);
+	glBegin(polygonSideGLStyle);
 	//glColor3f(0.0f, 0.0f, 1.0f); // Blue
 	for (int i = 0; i < noOfSide; ++i) {
 		int next = (i + 1) % noOfSide; // Wrap around to the first vertex
+		glTexCoord2f(1, 1);
 		glVertex3fv(frontPolygon[i]);
+		glTexCoord2f(1, 0);
 		glVertex3fv(backPolygon[i]);
+		glTexCoord2f(0, 0);
 		glVertex3fv(backPolygon[next]);
+		glTexCoord2f(0, 1);
 		glVertex3fv(frontPolygon[next]);
 	}
 	glEnd();
@@ -3736,6 +3298,7 @@ void lowerBodyWaist()
 	glTranslatef(0, 0.25, 1.5);
 
 	//Upper plate - polygon
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	glPushMatrix();
 	glTranslatef(0, 0.75, 0);
 	polygonPlate(6, frontPlateFrontHexagon, frontPlateBackHexagon);
@@ -3743,8 +3306,25 @@ void lowerBodyWaist()
 
 	//Lower plate - polygon
 	glPushMatrix();
-	glTranslatef(0, -0.75, 0);
+	glTranslatef(0, -1, 0);
 	polygonPlate(5, frontPlateFrontPentagon, frontPlateBackPentagon);
+	glPopMatrix();
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	//Front plate - tiny prism
+	glPushMatrix();
+	glTranslatef(0, 0, 0.1);
+	glRotatef(90, 1, 0, 0);
+	for (int i = 0; i < 3; i++)
+	{
+		glPushMatrix();
+		glRotatef(i * 120, 0, 1, 0);
+		glTranslatef(0, 0, 0.75);
+		glBindTexture(GL_TEXTURE_2D, textureArr[2]);
+		polygonPlate(3, side1Prism, side2Prism);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glPopMatrix();
+	}
 	glPopMatrix();
 
 	glPopMatrix();
@@ -3756,8 +3336,9 @@ void lowerBodyWaist()
 
 	//Cuboid
 	glTranslatef(-0.5, -0.5, -1.5);
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	rect(1, 1, 3, style_gl);
-
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopMatrix();
 
 
@@ -3772,17 +3353,19 @@ void lowerBodyWaist()
 	glPushMatrix();
 
 	//Translation to up for upper plates
-	glTranslatef(0, 1.1, 0);
+	glTranslatef(0, 1.4, 0);
 
 	//Left upper plate - polygon
 	glPushMatrix();
-	glTranslatef(-0.9, 0, 0);
+	glTranslatef(-1.1, 0, 0);
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	polygonPlate(6, backPlateFrontHexagon, backPlateBackHexagon);
+	
 	glPopMatrix();
 
 	//Right upper plate - polygon
 	glPushMatrix();
-	glTranslatef(0.9, 0, 0);
+	glTranslatef(1.1, 0, 0);
 	polygonPlate(6, backPlateFrontHexagon, backPlateBackHexagon);
 	glPopMatrix();
 
@@ -3790,8 +3373,27 @@ void lowerBodyWaist()
 
 	//Lower plate - polygon
 	glPushMatrix();
-	glTranslatef(0, -1, 0);
+	glTranslatef(0, -1.1, 0);
 	polygonPlate(5, backPlateFrontPentagon, backPlateBackPentagon);
+	glPopMatrix();
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+
+	//Back plate - tiny prism
+	glPushMatrix();
+	glTranslatef(0, 0, -0.15);
+	glRotatef(90, 0, 0, 1);
+	glRotatef(-90, 1, 0, 0);
+	for (int i = 1; i <= 4; i++)
+	{
+		glPushMatrix();
+		glRotatef(45 + i * 90, 0, 1, 0);
+		glTranslatef(1.5, 0, 0);
+		glBindTexture(GL_TEXTURE_2D, textureArr[2]);
+		polygonPlate(3, side1Prism, side2Prism);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glPopMatrix();
+	}
 	glPopMatrix();
 
 	glPopMatrix();
@@ -3802,7 +3404,9 @@ void lowerBodyWaist()
 	glPushMatrix();
 	glRotatef(90, 0, 1, 0);
 	glTranslatef(-0.5, -0.5, -1.25);
+	glBindTexture(GL_TEXTURE_2D, textureArr[2]);
 	rect(1, 1, 2.5, style_gl);
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopMatrix();
 }
 
@@ -3817,6 +3421,12 @@ void lowerBodyThigh()
 	//Buttock
 	glPushMatrix();
 	drawSphereWithoutGLUAdvanced(1, 1.5, 1.25, 50, 50);
+	glPushMatrix();
+	glTranslatef(0, 0, 1);
+	glBindTexture(GL_TEXTURE_2D, textureArr[2]);
+	polygonPlate(6, buttockFrontPlate, buttockBackPlate);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glPopMatrix();
 	glPopMatrix();
 
 	//Lower body - thigh
@@ -3827,21 +3437,42 @@ void lowerBodyThigh()
 
 	//Thigh middle plate
 	glPushMatrix();
+	glBindTexture(GL_TEXTURE_2D, textureArr[2]);
 	polygonPlate(4, thighMiddleFrontPlate, thighMiddleBackPlate);
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopMatrix();
 
 	//Thigh right side plate
 	glPushMatrix();
 	glTranslatef(0.9, 0, -0.9);
 	glRotatef(60, 0, 1, 0);
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	polygonPlate(5, thighSideFrontPlate, thighSideBackPlate);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glScalef(2, 2, 2);
+	glTranslatef(0, 0.25, 0.1);
+	glRotatef(90, 1, 0, 0);
+	glRotatef(-60, 0, 1, 0);
+	glBindTexture(GL_TEXTURE_2D, textureArr[2]);
+	polygonPlate(3, side1Prism, side2Prism);
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopMatrix();
 
 	//Thigh left side plate
 	glPushMatrix();
-	glTranslatef(-0.9, 0, -0.9);
-	glRotatef(120, 0, 1, 0);
+	glScalef(-1, 1, 1);
+	glTranslatef(0.9, 0, -0.9);
+	glRotatef(60, 0, 1, 0);
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	polygonPlate(5, thighSideFrontPlate, thighSideBackPlate);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glScalef(2, 2, 2);
+	glTranslatef(0, 0.25, 0.1);
+	glRotatef(90, 1, 0, 0);
+	glRotatef(-60, 0, 1, 0);
+	glBindTexture(GL_TEXTURE_2D, textureArr[2]);
+	polygonPlate(3, side1Prism, side2Prism);
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopMatrix();
 
 	//Translate to back
@@ -3849,9 +3480,10 @@ void lowerBodyThigh()
 
 	//Inner thigh
 	glPushMatrix();
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
 	rect(1, 3.5, 1, style_gl);
 	glPopMatrix();
-
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopMatrix();
 
 	glPopMatrix();
@@ -3868,16 +3500,17 @@ void lowerBodyKnee()
 
 	//Cylinder - Knee
 	glPushMatrix();
-	cylinder(1, 1, 0.5, 50, 50, style_gl);
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
+	cylinder(1, 1, 0.5, 50, 50, style_glu);
 	glPopMatrix();
 
 	//Circle - Knee
 	glPushMatrix();
-	disk(0, 1, 50, 50, style_gl);
+	disk(0, 1, 50, 50, style_glu);
 	glTranslatef(0, 0, 0.5);
-	disk(0, 1, 50, 50, style_gl);
+	disk(0, 1, 50, 50, style_glu);
 	glPopMatrix();
-
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopMatrix();
 }
 
@@ -3893,13 +3526,17 @@ void lowerBodyCalf()
 
 	//Calf upper part
 	glPushMatrix();
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	polygonPlate(6, calfUpperFrontPart, calfUpperBackPart);
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopMatrix();
 
 	//Calf upper part and calf shield connection
 	glPushMatrix();
 	glTranslatef(0.75, 0, 0);
+	glBindTexture(GL_TEXTURE_2D, textureArr[2]);
 	rect(0.75, 0.2, 0.2, style_gl);
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopMatrix();
 
 	//Calf shield
@@ -3911,6 +3548,7 @@ void lowerBodyCalf()
 
 	//Armor middle part
 	glPushMatrix();
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	polygonPlate(4, calfArmorMiddleFront, calfArmorMiddleBack);
 	glPopMatrix();
 
@@ -3923,17 +3561,40 @@ void lowerBodyCalf()
 
 	//Armor left part
 	glPushMatrix();
-	glTranslatef(-1.4, 0, -0.25);
-	glRotatef(150, 0, 1, 0);
+	glScalef(-1, 1, 1);
+	glTranslatef(1.4, 0, -0.25);
+	glRotatef(30, 0, 1, 0);
 	polygonPlate(3, calfArmorSideFront, calfArmorSideBack);
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopMatrix();
 
 	glPopMatrix();
 
 	//Calf lower part
 	glPushMatrix();
-	glTranslatef(-0.5, -3, -0.5);
+
+	glTranslatef(0, -3, 0);
+	glPushMatrix();
+	glTranslatef(-0.5, 0, -0.5);
 	rect(1, 2, 1, style_gl);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glPopMatrix();
+
+	glPushMatrix();
+	glRotatef(90, 0, 1, 0);
+	for (int i = 0; i < 4; i++)
+	{
+		glPushMatrix();
+		glRotatef(i * 90, 0, 1, 0);
+		glTranslatef(-1, -0.5, 0);
+		glScalef(0.25, 1, 1);
+		glBindTexture(GL_TEXTURE_2D, textureArr[2]);
+		polygonPlate(3, frontUpperSide1Leg, frontUpperSide2Leg);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glPopMatrix();
+	}
+	glPopMatrix();
+
 	glPopMatrix();
 
 	glPopMatrix();
@@ -3946,29 +3607,34 @@ void lowerBodyLeg()
 	//Lower body - leg
 	glPushMatrix();
 
-	glTranslatef(1.75, -3.75, 0);
+	glTranslatef(1.75, -4, 0);
 	glRotatef(90, 0, 1, 0);
 
 	glPushMatrix();
-	glTranslatef(0, -8, 0);
+	glTranslatef(0, -8.25, 0);
 
 	//Calf and leg connection
 	glPushMatrix();
-	glTranslatef(-0.4, 0, -0.4);
-	rect(0.8, 2, 0.8, style_gl);
+	glTranslatef(-0.25, 0, -0.25);
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
+	rect(0.5, 3, 0.5, style_gl);
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopMatrix();
 
 	//Front leg
 	glPushMatrix();
-	glTranslatef(-2, 0, 0);
-	polygonPlate(4, frontLowerSide1Leg, frontLowerSide2Leg);
+	glTranslatef(-1, 0, 0);
+	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	polygonPlate(3, frontUpperSide1Leg, frontUpperSide2Leg);
+	//glTranslatef(-1, 0, 0);
+	polygonPlate(4, frontLowerSide1Leg, frontLowerSide2Leg);
 	glPopMatrix();
 
 	//Back leg
 	glPushMatrix();
 	glTranslatef(0.75, 0, 0);
 	polygonPlate(5, backSide1Leg, backSide2Leg);
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopMatrix();
 
 	glPopMatrix();
@@ -3982,7 +3648,7 @@ void lowerBodyLegStructure(bool left)
 	//Thigh
 	glTranslatef(thighTranslationX, thighTranslationY, thighTranslationZ);
 
-	if(left)
+	if (left)
 		glRotatef(waistLeftThighRotation, 1, 0, 0);
 	else
 		glRotatef(waistRightThighRotation, 1, 0, 0);
@@ -4000,7 +3666,7 @@ void lowerBodyLegStructure(bool left)
 		glRotatef(thighLeftCalfRotation, 1, 0, 0);
 	else
 		glRotatef(thighRightCalfRotation, 1, 0, 0);
-	
+
 	glTranslatef(-calfTranslationX, -calfTranslationY, -calfTranslationZ);
 	lowerBodyCalf();
 	glPushMatrix();
@@ -4011,7 +3677,7 @@ void lowerBodyLegStructure(bool left)
 		glRotatef(calfLeftLegRotation, 1, 0, 0);
 	else
 		glRotatef(calfLeftLegRotation, 1, 0, 0);
-	
+
 	glTranslatef(-legTranslationX, -legTranslationY, -legTranslationZ);
 	lowerBodyLeg();
 	glPopMatrix();
@@ -4040,11 +3706,13 @@ void lowerBody()
 }
 //----------------end---------------------------
 
+
+
 void display()
 {
 	glClearColor(0.498, 0.498, 0.498, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	texture();
+
 	light();
 
 	projection();
@@ -4056,6 +3724,9 @@ void display()
 	camera();
 	
 	updateWalkingAnimation();
+
+	Texture();
+
 
 	glPushMatrix();	
 	glTranslatef(0,7.5,0);
@@ -4072,9 +3743,7 @@ void display()
 	glPopMatrix();
 
 
-
 	glPopMatrix();//camera
-	destory();
 }
 //--------------------------------------------------------------------
 
@@ -4111,7 +3780,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int nCmdShow)
 	if (!wglMakeCurrent(hdc, hglrc)) return false;
 	glEnable(GL_DEPTH_TEST);
 
-	
+	setUpTexture();
 	//--------------------------------
 	//	End initialization
 	//--------------------------------
@@ -4137,6 +3806,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int nCmdShow)
 	}
 
 	UnregisterClass(WINDOW_TITLE, wc.hInstance);
+	destory();
 
 	return true;
 }

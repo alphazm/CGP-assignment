@@ -142,6 +142,9 @@
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="cherry.bmp" />
+    <Image Include="stawberry.bmp" />
+    <Image Include="vanila.bmp" />
     <Image Include="waffle.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

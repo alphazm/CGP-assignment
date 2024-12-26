@@ -23,5 +23,14 @@
     <Image Include="waffle.bmp">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="cherry.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="stawberry.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="vanila.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>
