@@ -10,6 +10,10 @@
 #define WINDOW_TITLE "OpenGL Window"
 const float PI = 3.141592f, speed = 0.1;
 
+void weapon();
+
+void weaponLine();
+
 //drawing
 struct color
 {
@@ -105,16 +109,20 @@ float finger_min_angle = 0;
 float finger_current_angle = finger_min_angle;
 float hand_max_angle = -90;
 float hand_min_angle = 0;
-float hand_current_angle = hand_min_angle;
+float hand_left_current_angle = hand_min_angle;
+float hand_right_current_angle = hand_min_angle;
 float arm_upper_max_angle_z = 80;
 float arm_upper_min_angle_z = -90;
-float arm_upper_current_angle_z = 0;
+float arm_upper_right_current_angle_z = 0;
+float arm_upper_left_current_angle_z = 0;
 float arm_upper_max_angle_y = -90;
 float arm_upper_min_angle_y = 0;
-float arm_upper_current_angle_y = arm_upper_min_angle_y;
+float arm_upper_left_current_angle_y = arm_upper_min_angle_y;
+float arm_upper_right_current_angle_y = arm_upper_min_angle_y;
 float arm_lower_max_angle = -120;
 float arm_lower_min_angle = 0;
-float arm_lower_current_angle = arm_lower_min_angle;
+float arm_lower_left_current_angle = arm_lower_min_angle;
+float arm_lower_right_current_angle = arm_lower_min_angle;
 float body_max_angle = 45;
 float body_min_angle = -45;
 float body_current_angle = 0;
@@ -123,9 +131,9 @@ float head_min_angle = -45;
 float head_current_angle = 0;
 
 //Rotation for lower body animation
-float waistThighRotation = 0, waistThighMinRotation = -45, waistThighMaxRotation = 90;
-float thighCalfRotation = 0, thighCalfMinRotation = -45, thighCalfMaxRotation = 0;
-float calfLegRotation = 0, calfLegMinRotation = -30, calfLegMaxRotation = 30;
+float waistLeftThighRotation = 0, waistRightThighRotation = 0, waistThighMinRotation = -45, waistThighMaxRotation = 90;
+float thighLeftCalfRotation = 0, thighRightCalfRotation = 0, thighCalfMinRotation = -45, thighCalfMaxRotation = 0;
+float calfLeftLegRotation = 0, calfRightLegRotation = 0, calfLegMinRotation = -30, calfLegMaxRotation = 30;
 
 //Lower body part translation
 float thightX = 1.75, thighY = -0.25, thighZ = 0;
@@ -134,6 +142,8 @@ float legX = 1.75, legY = -3.75, legZ = 0;
 float thighTranslationX = 1.75, thighTranslationY = thighY, thighTranslationZ = 0;
 float calfTranslationX = 1.25, calfTranslationY = thighTranslationY + calfY, calfTranslationZ = 0;
 float legTranslationX = 1.75, legTranslationY = calfTranslationY + legY, legTranslationZ = 0;
+
+bool walk = false;
 
 //texture
 BITMAP BMP;
@@ -148,6 +158,14 @@ float colorR = 0, colorG = 0, colorB = 0;
 bool colorSwitch = true;
 
 GLUquadricObj* obj = NULL;
+
+void walkAnimation() {
+	if (walk)
+	{
+
+	}
+}
+
 LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
@@ -176,6 +194,7 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			}
 			styleSwitch = !styleSwitch;
 		}
+		if (wParam == 'W') { walk = !walk; }
 		if (wParam == 'I') { weaponSwitch = !weaponSwitch; }
 		if (wParam == 'R') { textureCount++; textureCount %= 3; }
 		if (wParam == 'T') { textureSwitch = !textureSwitch; }
@@ -190,8 +209,8 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			/*if (arm_upper_current_angle_z < arm_upper_max_angle_z)
 				arm_upper_current_angle_z += speed + 5;*/
 
-			/*if (hand_current_angle > hand_max_angle)
-				hand_current_angle -= speed + 5;*/
+			/*if (hand_right_current_angle > hand_max_angle)
+				hand_right_current_angle -= speed + 5;*/
 			 
 			/*if (arm_lower_current_angle > arm_lower_max_angle)
 				arm_lower_current_angle -= speed + 5;*/
@@ -202,8 +221,8 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			/*if (body_current_angle < body_max_angle)
 				body_current_angle += speed + 5;*/
 
-			if (head_current_angle < head_max_angle)
-				head_current_angle += speed + 5;
+			/*if (head_current_angle < head_max_angle)
+				head_current_angle += speed + 5;*/
 		}
 		if (wParam == 'N') {
 			/*if (arm_upper_current_angle_y < arm_upper_min_angle_y)
@@ -212,8 +231,8 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			/*if (arm_upper_current_angle_z > arm_upper_min_angle_z)
 				arm_upper_current_angle_z -= speed + 5;*/
 
-			/*if (hand_current_angle < hand_min_angle)
-				hand_current_angle += speed + 5; */
+			/*if (hand_right_current_angle < hand_min_angle)
+				hand_right_current_angle += speed + 5;*/
 
 			/*if (arm_lower_current_angle < arm_lower_min_angle)
 				arm_lower_current_angle += speed + 5;*/
@@ -224,8 +243,8 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			/*if (body_current_angle > body_min_angle)
 				body_current_angle -= speed + 5;*/
 
-			if (head_current_angle > head_min_angle)
-				head_current_angle -= speed + 5;
+			/*if (head_current_angle > head_min_angle)
+				head_current_angle -= speed + 5;*/
 
 		}
 		if (wParam == VK_ESCAPE) PostQuitMessage(0);
@@ -397,6 +416,7 @@ void drawSphereWithoutGLU(GLfloat radius = 0.35, int sliceNo = 30, int stackNo =
 void drawSphereWithoutGLUAdvanced(GLfloat xRadius = 0.35, GLfloat yRadius = 0.35, GLfloat zRadius = 0.35, int sliceNo = 30, int stackNo = 30)
 {
 	GLfloat x, y, z, sliceA, stackA;
+	GLfloat u, v;
 
 	for (sliceA = 0.0; sliceA < 2 * PI; sliceA += PI / sliceNo)
 	{
@@ -406,10 +426,16 @@ void drawSphereWithoutGLUAdvanced(GLfloat xRadius = 0.35, GLfloat yRadius = 0.35
 			x = xRadius * cos(stackA) * sin(sliceA);
 			y = yRadius * sin(stackA) * sin(sliceA);
 			z = zRadius * cos(sliceA);
+			u = stackA / (2 * PI); // Map longitude to [0, 1]
+			v = sliceA / (2 * PI); // Map latitude to [0, 1]
+			glTexCoord2f(u, v);
 			glVertex3f(x, y, z);
 			x = xRadius * cos(stackA) * sin(sliceA + PI / stackNo);
 			y = yRadius * sin(stackA) * sin(sliceA + PI / sliceNo);
 			z = zRadius * cos(sliceA + PI / sliceNo);
+			u = stackA / (2 * PI); // Map longitude to [0, 1]
+			v = (sliceA + PI / sliceNo) / (2 * PI); // Adjust latitude
+			glTexCoord2f(u, v);
 			glVertex3f(x, y, z);
 		}
 		glEnd();
@@ -1308,12 +1334,19 @@ void body_back() {
 	glPopMatrix();
 }
 
-void arm_upper() {
+void arm_upper(bool left) {
 	glPushMatrix();
 	glTranslatef(2.2, 0, 0);
 
-	glRotatef(arm_upper_current_angle_y, 0, 1, 0);
-	glRotatef(arm_upper_current_angle_z, 0, 0, 1);
+	if (left) {
+		glRotatef(arm_upper_left_current_angle_y, 0, 1, 0);
+		glRotatef(arm_upper_left_current_angle_z, 0, 0, 1);
+	}
+	else
+	{
+		glRotatef(arm_upper_right_current_angle_y, 0, 1, 0);
+		glRotatef(arm_upper_right_current_angle_z, 0, 0, 1);
+	}
 	
 	glPushMatrix();
 	glColor3f(0, g, 0);
@@ -1356,12 +1389,19 @@ void arm_upper() {
 
 }
 
-void arm_lower() {
+void arm_lower(bool left) {
 	glPushMatrix();
 	glColor3f(r, g, b);
 	glTranslatef(3, 0, 0);
 
-	glRotatef(arm_lower_current_angle, 0, 1, 0);
+	
+	if (left) {
+		glRotatef(arm_lower_left_current_angle, 0, 1, 0);
+	}
+	else
+	{
+		glRotatef(arm_lower_right_current_angle, 0, 1, 0);
+	}
 
 	glPushMatrix();
 	glRotatef(90, 0, 1, 0);
@@ -1574,7 +1614,7 @@ void hand() {
 	glPopMatrix();
 }
 
-void arm() {
+void arm(bool left) {
 	glPushMatrix();
 	glColor3f(r, g, b);
 	glRotatef(90, 0, 1, 0);
@@ -1603,13 +1643,34 @@ void arm() {
 	glPopMatrix();
 
 
-	arm_upper();
+	arm_upper(left);
 	
-	arm_lower();
+	arm_lower(left);
 
 	glPushMatrix();
-	glRotatef(hand_current_angle, 1, 0, 0);
+	if (left) {
+		glRotatef(hand_left_current_angle, 1, 0, 0);
+	}
+	else
+	{
+		glRotatef(hand_right_current_angle, 1, 0, 0);
+		if (weaponSwitch) {
+			glPushMatrix();
+			glTranslatef(3.4, -0.2, 2);
+			glRotatef(90, 1, 0, 0);
+			glScalef(5, 5, 5);
+			if (!styleSwitch)
+				weapon();
+			else
+				weaponLine();
+
+			glPopMatrix();
+
+			finger_current_angle = finger_max_angle;
+		}
+	}
 	hand();
+	
 	glPopMatrix(); //hand
 
 	glPopMatrix(); //lower arm
@@ -1651,12 +1712,12 @@ void body() {
 
 	glPushMatrix();
 	glTranslatef(2.2,3.5,-0.5);
-	arm();
+	arm(true);
 	glPopMatrix();
 	glPushMatrix();
 	glScalef(-1, 1, 1);
 	glTranslatef(2.2, 3.5, -0.5);
-	arm();
+	arm(false);
 	glPopMatrix();
 	
 	glPopMatrix();
@@ -3105,7 +3166,7 @@ void weapon()
 	//bottom spike lower
 	glPushMatrix();
 
-	glTranslatef(0.0, -0.9, 0.0);
+	glTranslatef(0.0, -3.65, 0.0);
 	glRotatef(-90, 1.0, 0.0, 0.0);
 
 	drawCylinder(0.0, 0.1, 0.15);
@@ -3115,7 +3176,7 @@ void weapon()
 	//bottom spike upper
 	glPushMatrix();
 
-	glTranslatef(0.0, -0.75, 0.0);
+	glTranslatef(0.0, -3.5, 0.0);
 	glRotatef(-90, 1.0, 0.0, 0.0);
 
 	drawCylinder(0.1, 0.0, 0.15);
@@ -3127,10 +3188,10 @@ void weapon()
 	//handle
 	glPushMatrix();
 
-	glTranslatef(0.0, -0.7, 0.0);
+	glTranslatef(0.0, -3.5, 0.0);
 	glRotatef(-90, 1.0, 0.0, 0.0);
 
-	drawCylinder(0.05, 0.05, 0.8);
+	drawCylinder(0.05, 0.05, 3.5);
 
 	glPopMatrix();
 
@@ -3190,7 +3251,7 @@ void weaponLine()
 	//bottom spike lower
 	glPushMatrix();
 
-	glTranslatef(0.0, -0.9, 0.0);
+	glTranslatef(0.0, -3.65, 0.0);
 	glRotatef(-90, 1.0, 0.0, 0.0);
 
 	drawLineCylinder(0.0, 0.1, 0.15);
@@ -3200,7 +3261,7 @@ void weaponLine()
 	//bottom spike upper
 	glPushMatrix();
 
-	glTranslatef(0.0, -0.75, 0.0);
+	glTranslatef(0.0, -3.5, 0.0);
 	glRotatef(-90, 1.0, 0.0, 0.0);
 
 	drawLineCylinder(0.1, 0.0, 0.15);
@@ -3212,10 +3273,10 @@ void weaponLine()
 	//handle
 	glPushMatrix();
 
-	glTranslatef(0.0, -0.7, 0.0);
+	glTranslatef(0.0, -3.5, 0.0);
 	glRotatef(-90, 1.0, 0.0, 0.0);
 
-	drawLineCylinder(0.05, 0.05, 0.8);
+	drawLineCylinder(0.05, 0.05, 3.5);
 
 	glPopMatrix();
 
@@ -3846,12 +3907,17 @@ void lowerBodyLeg()
 	glPopMatrix();
 }
 
-void lowerBodyLegStructure()
+void lowerBodyLegStructure(bool left)
 {
 	glPushMatrix();
 	//Thigh
 	glTranslatef(thighTranslationX, thighTranslationY, thighTranslationZ);
-	glRotatef(waistThighRotation, 1, 0, 0);
+
+	if(left)
+		glRotatef(waistLeftThighRotation, 1, 0, 0);
+	else
+		glRotatef(waistRightThighRotation, 1, 0, 0);
+
 	glTranslatef(-thighTranslationX, -thighTranslationY, -thighTranslationZ);
 	lowerBodyThigh();
 	glPushMatrix();
@@ -3860,13 +3926,23 @@ void lowerBodyLegStructure()
 	glPushMatrix();
 	//Calf
 	glTranslatef(calfTranslationX, calfTranslationY, calfTranslationZ);
-	glRotatef(thighCalfRotation, 1, 0, 0);
+
+	if (left)
+		glRotatef(thighLeftCalfRotation, 1, 0, 0);
+	else
+		glRotatef(thighRightCalfRotation, 1, 0, 0);
+	
 	glTranslatef(-calfTranslationX, -calfTranslationY, -calfTranslationZ);
 	lowerBodyCalf();
 	glPushMatrix();
 	//Leg
 	glTranslatef(legTranslationX, legTranslationY, legTranslationZ);
-	glRotatef(calfLegRotation, 1, 0, 0);
+
+	if (left)
+		glRotatef(calfLeftLegRotation, 1, 0, 0);
+	else
+		glRotatef(calfLeftLegRotation, 1, 0, 0);
+	
 	glTranslatef(-legTranslationX, -legTranslationY, -legTranslationZ);
 	lowerBodyLeg();
 	glPopMatrix();
@@ -3884,13 +3960,13 @@ void lowerBody()
 
 	//Right leg
 	glPushMatrix();
-	lowerBodyLegStructure();
+	lowerBodyLegStructure(false);
 	glPopMatrix();
 
 	//Left leg
 	glPushMatrix();
 	glScalef(-1, 1, 1);
-	lowerBodyLegStructure();
+	lowerBodyLegStructure(true);
 	glPopMatrix();
 }
 //----------------end---------------------------
@@ -3910,11 +3986,10 @@ void display()
 	glPushMatrix();
 	camera();
 	
-	glPushMatrix();
-	
-	glTranslatef(0,6.5,-0.1);
+	glPushMatrix();	
+	glTranslatef(0,7.5,0);
 	glRotatef(180, 0, 1, 0);
-	glScalef(1.8, 1.8, 1.8);
+	glScalef(3, 3, 3);
 	head();
 	glPopMatrix();
 
@@ -3924,6 +3999,8 @@ void display()
 	glTranslatef(0,-2,0);
 	lowerBody();
 	glPopMatrix();
+
+
 
 	glPopMatrix();//camera
 	destory();
