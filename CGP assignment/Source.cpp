@@ -140,10 +140,13 @@ float clamp(float value, float min, float max) {
 	return value;
 }
 
+//Draw style for lower body
+GLenum polygonFaceGLStyle = GL_POLYGON, polygonSideGLStyle = GL_QUADS, sphereGLStyle = GL_TRIANGLE_STRIP;
+
 //Rotation for lower body animation
 float waistLeftThighRotation = 0, waistRightThighRotation = 0, waistThighMinRotation = -45, waistThighMaxRotation = 90;
 float thighLeftCalfRotation = 0, thighRightCalfRotation = 0, thighCalfMinRotation = 0, thighCalfMaxRotation = 45;
-float calfLeftLegRotation = 0, calfRightLegRotation = 0, calfLegMinRotation = -30, calfLegMaxRotation = 30;
+float calfLeftLegRotation = 0, calfRightLegRotation = 0, calfLegMinRotation = -15, calfLegMaxRotation = 15;
 
 //Lower body part translation
 float thightX = 1.75, thighY = -0.25, thighZ = 0;
@@ -245,7 +248,9 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			case 0:
 				style_glu = GLU_LINE;
 				style_gl = GL_LINE_LOOP;
-				
+				polygonFaceGLStyle = GL_LINE_LOOP;
+				polygonSideGLStyle = GL_LINE_LOOP;
+				sphereGLStyle = GL_LINE_LOOP;
 				break;
 			case 1:
 				style_glu = GLU_FILL;
@@ -330,33 +335,6 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			pitch = 0.0f;
 			ty = tx = tx = angle = 0;
 		}
-
-		//Rotation for lower body
-		if (wParam == 'W')
-		{
-			waistThighRotation += 5;
-		}
-		if (wParam == 'S')
-		{
-			waistThighRotation -= 5;
-		}
-		if (wParam == 'E')
-		{
-			thighCalfRotation += 5;
-		}
-		if (wParam == 'D')
-		{
-			thighCalfRotation -= 5;
-		}
-		if (wParam == 'R')
-		{
-			calfLegRotation += 5;
-		}
-		if (wParam == 'F')
-		{
-			calfLegRotation -= 5;
-		}
-
 		cameraPosition.x = target.x + radius * cos(yaw) * cos(pitch);
 		cameraPosition.y = target.y + radius * sin(pitch);
 		cameraPosition.z = target.z + radius * sin(yaw) * cos(pitch);
@@ -514,29 +492,34 @@ void drawSphereWithoutGLU(GLfloat radius = 0.35, int sliceNo = 30, int stackNo =
 	}
 }
 
-void drawSphereWithoutGLUAdvanced(GLfloat xRadius = 0.35, GLfloat yRadius = 0.35, GLfloat zRadius = 0.35, int sliceNo = 30, int stackNo = 30)
+//Sphere with customizable radius in 3 axes
+void drawSphereWithoutGLUAdvanced(GLfloat xRadius, GLfloat yRadius, GLfloat zRadius, int sliceNo, int stackNo)
 {
-	GLfloat x, y, z, sliceA, stackA;
-	GLfloat u, v;
+	GLfloat x, y, z, u, v, sliceA, stackA;
 
 	for (sliceA = 0.0; sliceA < 2 * PI; sliceA += PI / sliceNo)
 	{
-		glBegin(style_gl);
+		glBegin(sphereGLStyle);
 		for (stackA = 0.0; stackA < PI; stackA += PI / stackNo)
 		{
 			x = xRadius * cos(stackA) * sin(sliceA);
 			y = yRadius * sin(stackA) * sin(sliceA);
 			z = zRadius * cos(sliceA);
-			u = stackA / (2 * PI); // Map longitude to [0, 1]
-			v = sliceA / (2 * PI); // Map latitude to [0, 1]
-			glTexCoord2f(u, v);
+
+			u = sliceA / (2 * PI);         // u: Longitude as a fraction of 2*PI
+			v = stackA / PI;              // v: Latitude as a fraction of PI
+
+			glTexCoord2f(u, v);			// Assign texture coordinate
 			glVertex3f(x, y, z);
+
 			x = xRadius * cos(stackA) * sin(sliceA + PI / stackNo);
 			y = yRadius * sin(stackA) * sin(sliceA + PI / sliceNo);
 			z = zRadius * cos(sliceA + PI / sliceNo);
-			u = stackA / (2 * PI); // Map longitude to [0, 1]
-			v = (sliceA + PI / sliceNo) / (2 * PI); // Adjust latitude
-			glTexCoord2f(u, v);
+
+			u = (sliceA + PI / sliceNo) / (2 * PI); // Adjust u for the next slice
+			v = stackA / PI;                        // v stays the same
+
+			glTexCoord2f(u, v);			// Assign texture coordinate
 			glVertex3f(x, y, z);
 		}
 		glEnd();
@@ -630,40 +613,6 @@ void destory() {
 	glDeleteTextures(1, &textureArr[2]);
 	glDeleteTextures(1, &textureArr[3]);
 	glDisable(GL_TEXTURE_2D);
-}
-
-//Sphere with customizable radius in 3 axes
-void drawSphereWithoutGLUAdvanced(GLfloat xRadius, GLfloat yRadius, GLfloat zRadius, int sliceNo, int stackNo)
-{
-	GLfloat x, y, z, u, v, sliceA, stackA;
-
-	for (sliceA = 0.0; sliceA < 2 * PI; sliceA += PI / sliceNo)
-	{
-		glBegin(sphereGLStyle );
-		for (stackA = 0.0; stackA < PI; stackA += PI / stackNo)
-		{
-			x = xRadius * cos(stackA) * sin(sliceA);
-			y = yRadius * sin(stackA) * sin(sliceA);
-			z = zRadius * cos(sliceA);
-
-			u = sliceA / (2 * PI);         // u: Longitude as a fraction of 2*PI
-			v = stackA / PI;              // v: Latitude as a fraction of PI
-
-			glTexCoord2f(u, v);			// Assign texture coordinate
-			glVertex3f(x, y, z);
-
-			x = xRadius * cos(stackA) * sin(sliceA + PI / stackNo);
-			y = yRadius * sin(stackA) * sin(sliceA + PI / sliceNo);
-			z = zRadius * cos(sliceA + PI / sliceNo);
-
-			u = (sliceA + PI / sliceNo) / (2 * PI); // Adjust u for the next slice
-			v = stackA / PI;                        // v stays the same
-
-			glTexCoord2f(u, v);			// Assign texture coordinate
-			glVertex3f(x, y, z);
-		}
-		glEnd();
-	}
 }
 
 void camera() {
@@ -3529,6 +3478,9 @@ void head() {
 //------------head end----------------------
 
 //----------body bottom-------------------
+
+//Soft variable for lower body - front plate
+
 float lowerBodyFrontUpperPlateX1 = 1.2, lowerBodyFrontUpperPlateX2 = 1,
 lowerBodyFrontUpperPlateY1 = 0.5, lowerBodyFrontUpperPlateY2 = 0.2,
 lowerBodyFrontUpperPlateZ = 0.1;
@@ -3552,7 +3504,7 @@ float frontPlateBackHexagon[6][3] = {
 };
 
 float lowerBodyFrontLowerPlateX1 = 1,
-lowerBodyFrontLowerPlateY1 = 1.0, lowerBodyFrontLowerPlateY2 = 0.2,
+lowerBodyFrontLowerPlateY1 = 1.5, lowerBodyFrontLowerPlateY2 = 0.4,
 lowerBodyFrontLowerPlateZ = 0.1;
 
 float frontPlateFrontPentagon[5][3] = {
@@ -3571,33 +3523,51 @@ float frontPlateBackPentagon[5][3] = {
 	{-lowerBodyFrontLowerPlateX1, -lowerBodyFrontLowerPlateY2, -lowerBodyFrontLowerPlateZ}
 };
 
+//Soft variable for lower body - tiny prism
+
+float waistPrismX = 0.1,
+waistPrismY = 0.1,
+waistPrismZ = 0.4;
+
+float side1Prism[3][3] = {
+	{0, waistPrismY, waistPrismZ},
+	{waistPrismX, 0, waistPrismZ},
+	{-waistPrismX, 0, waistPrismZ}
+};
+
+float side2Prism[3][3] = {
+	{0, waistPrismY, -waistPrismZ},
+	{waistPrismX, 0, -waistPrismZ},
+	{-waistPrismX, 0, -waistPrismZ}
+};
+
 //Soft variable for lower body - back plate
 
-float lowerBodyBackUpperPlateX1 = 0.6, lowerBodyBackUpperPlateX2 = 0.2,
-lowerBodyBackUpperPlateY1 = 0.6, lowerBodyBackUpperPlateY2 = 0.0,
-lowerBodyBackUpperPlateZ = 0.1;
+float lowerBodyBackUpperPlateX1 = 0.9, lowerBodyBackUpperPlateX2 = 0.75, lowerBodyBackUpperPlateX3 = 0.2,
+lowerBodyBackUpperPlateY1 = 0.8, lowerBodyBackUpperPlateY2 = 0.2,
+lowerBodyBackUpperPlateZ = 0.15;
 
 float backPlateFrontHexagon[6][3] = {
-	{-lowerBodyBackUpperPlateX2, lowerBodyBackUpperPlateY1, lowerBodyBackUpperPlateZ},
-	{lowerBodyBackUpperPlateX2, lowerBodyBackUpperPlateY1, lowerBodyBackUpperPlateZ},
-	{lowerBodyBackUpperPlateX1, lowerBodyBackUpperPlateY2, lowerBodyBackUpperPlateZ},
+	{-lowerBodyBackUpperPlateX3, lowerBodyBackUpperPlateY1, lowerBodyBackUpperPlateZ},
+	{lowerBodyBackUpperPlateX3, lowerBodyBackUpperPlateY1, lowerBodyBackUpperPlateZ},
+	{lowerBodyBackUpperPlateX2, lowerBodyBackUpperPlateY2, lowerBodyBackUpperPlateZ},
 	{lowerBodyBackUpperPlateX1, -lowerBodyBackUpperPlateY1, lowerBodyBackUpperPlateZ},
 	{-lowerBodyBackUpperPlateX1, -lowerBodyBackUpperPlateY1, lowerBodyBackUpperPlateZ},
-	{-lowerBodyBackUpperPlateX1, lowerBodyBackUpperPlateY2, lowerBodyBackUpperPlateZ}
+	{-lowerBodyBackUpperPlateX2, lowerBodyBackUpperPlateY2, lowerBodyBackUpperPlateZ}
 };
 
 float backPlateBackHexagon[6][3] = {
-	{-lowerBodyBackUpperPlateX2, lowerBodyBackUpperPlateY1, -lowerBodyBackUpperPlateZ},
-	{lowerBodyBackUpperPlateX2, lowerBodyBackUpperPlateY1, -lowerBodyBackUpperPlateZ},
-	{lowerBodyBackUpperPlateX1, lowerBodyBackUpperPlateY2, -lowerBodyBackUpperPlateZ},
+	{-lowerBodyBackUpperPlateX3, lowerBodyBackUpperPlateY1, -lowerBodyBackUpperPlateZ},
+	{lowerBodyBackUpperPlateX3, lowerBodyBackUpperPlateY1, -lowerBodyBackUpperPlateZ},
+	{lowerBodyBackUpperPlateX2, lowerBodyBackUpperPlateY2, -lowerBodyBackUpperPlateZ},
 	{lowerBodyBackUpperPlateX1, -lowerBodyBackUpperPlateY1, -lowerBodyBackUpperPlateZ},
 	{-lowerBodyBackUpperPlateX1, -lowerBodyBackUpperPlateY1, -lowerBodyBackUpperPlateZ},
-	{-lowerBodyBackUpperPlateX1, lowerBodyBackUpperPlateY2, -lowerBodyBackUpperPlateZ}
+	{-lowerBodyBackUpperPlateX2, lowerBodyBackUpperPlateY2, -lowerBodyBackUpperPlateZ}
 };
 
-float lowerBodyBackLowerPlateX1 = 1.5, lowerBodyBackLowerPlateX2 = 1.25,
-lowerBodyBackLowerPlateY1 = 1.5, lowerBodyBackLowerPlateY2 = 0.2,
-lowerBodyBackLowerPlateZ = 0.1;
+float lowerBodyBackLowerPlateX1 = 2, lowerBodyBackLowerPlateX2 = 1.5,
+lowerBodyBackLowerPlateY1 = 1.75, lowerBodyBackLowerPlateY2 = 0.5,
+lowerBodyBackLowerPlateZ = 0.15;
 
 float backPlateFrontPentagon[5][3] = {
 	{-lowerBodyBackLowerPlateX1, lowerBodyBackLowerPlateY1, lowerBodyBackLowerPlateZ},
@@ -3613,6 +3583,30 @@ float backPlateBackPentagon[5][3] = {
 	{lowerBodyBackLowerPlateX2, -lowerBodyBackLowerPlateY2, -lowerBodyBackLowerPlateZ},
 	{0, -lowerBodyBackLowerPlateY1, -lowerBodyBackLowerPlateZ},
 	{-lowerBodyBackLowerPlateX2, -lowerBodyBackLowerPlateY2, -lowerBodyBackLowerPlateZ}
+};
+
+//Soft variable for lower body - buttock plate
+
+float buttockPlateX1 = 0.5, buttockPlateX2 = 0.25,
+buttockPlateY = 0.75,
+buttockPlateZ = 0.3;
+
+float buttockFrontPlate[6][3] = {
+	{-buttockPlateX2, buttockPlateY, buttockPlateZ},
+	{buttockPlateX2, buttockPlateY, buttockPlateZ},
+	{buttockPlateX1, 0, buttockPlateZ},
+	{buttockPlateX2, -buttockPlateY, buttockPlateZ},
+	{-buttockPlateX2, -buttockPlateY, buttockPlateZ},
+	{-buttockPlateX1, 0, buttockPlateZ}
+};
+
+float buttockBackPlate[6][3] = {
+	{-buttockPlateX2, buttockPlateY, -buttockPlateZ},
+	{buttockPlateX2, buttockPlateY, -buttockPlateZ},
+	{buttockPlateX1, 0, -buttockPlateZ},
+	{buttockPlateX2, -buttockPlateY, -buttockPlateZ},
+	{-buttockPlateX2, -buttockPlateY, -buttockPlateZ},
+	{-buttockPlateX1, 0, -buttockPlateZ}
 };
 
 //Soft variable for lower body - thigh middle plate
@@ -3714,7 +3708,7 @@ float calfArmorSideBack[3][3] = {
 //Soft variable for lower body - front upper and lower leg
 
 float frontLegX1 = 2, frontLegX2 = 0.5,
-frontLegY1 = 1.5, frontLegY2 = 0.2,
+frontLegY1 = 1.25, frontLegY2 = 0.2,
 frontLegZ1 = 0.75, frontLegZ2 = 0.5;
 
 float frontLowerSide1Leg[4][3] = {
@@ -3746,7 +3740,7 @@ float frontUpperSide2Leg[3][3] = {
 //Soft variable for lower body - back leg
 
 float backLegX1 = 0.5, backLegX2 = 0.25,
-backLegY = 1.5,
+backLegY = 1.25,
 backLegZ = 0.75;
 
 float backSide1Leg[5][3] = {
@@ -3764,32 +3758,64 @@ float backSide2Leg[5][3] = {
 	{backLegX2, -backLegY, -backLegZ},
 	{-backLegX1, -backLegY, -backLegZ} };
 
+
+
 void polygonPlate(int noOfSide, GLfloat frontPolygon[][3], GLfloat backPolygon[][3])
 {
+	// Calculate the centroid for the front and back polygons
+	GLfloat frontCentroid[2] = { 0.0f, 0.0f };
+	GLfloat backCentroid[2] = { 0.0f, 0.0f };
+
+	// Calculate the centroid of the front polygon
+	for (int i = 0; i < noOfSide; ++i) {
+		frontCentroid[0] += frontPolygon[i][0];
+		frontCentroid[1] += frontPolygon[i][1];
+	}
+	frontCentroid[0] /= noOfSide;
+	frontCentroid[1] /= noOfSide;
+
+	// Calculate the centroid of the back polygon
+	for (int i = 0; i < noOfSide; ++i) {
+		backCentroid[0] += backPolygon[i][0];
+		backCentroid[1] += backPolygon[i][1];
+	}
+	backCentroid[0] /= noOfSide;
+	backCentroid[1] /= noOfSide;
+
 	//Draw front
-	glBegin(style_gl);
+	glBegin(polygonFaceGLStyle);
 	//glColor3f(1.0f, 0.0f, 0.0f); // Red
 	for (int i = 0; i < noOfSide; ++i) {
+		GLfloat u = (frontPolygon[i][0] - frontCentroid[0]) * 0.5f + 0.5f;  // Normalize
+		GLfloat v = (frontPolygon[i][1] - frontCentroid[1]) * 0.5f + 0.5f;  // Normalize
+		glTexCoord2f(u, v);
 		glVertex3fv(frontPolygon[i]);
 	}
 	glEnd();
 
 	// Draw back
-	glBegin(style_gl);
+	glBegin(polygonFaceGLStyle);
 	//glColor3f(0.0f, 1.0f, 0.0f); // Green
 	for (int i = 0; i < noOfSide; ++i) {
+		GLfloat u = (backPolygon[i][0] - backCentroid[0]) * 0.5f + 0.5f;  // Normalize
+		GLfloat v = (backPolygon[i][1] - backCentroid[1]) * 0.5f + 0.5f;  // Normalize
+		glTexCoord2f(u, v);
 		glVertex3fv(backPolygon[i]);
 	}
 	glEnd();
 
 	// Draw sides
-	glBegin(style_gl);
+	glBegin(polygonSideGLStyle);
 	//glColor3f(0.0f, 0.0f, 1.0f); // Blue
 	for (int i = 0; i < noOfSide; ++i) {
 		int next = (i + 1) % noOfSide; // Wrap around to the first vertex
+		glTexCoord2f(1, 1);
 		glVertex3fv(frontPolygon[i]);
+		glTexCoord2f(1, 0);
 		glVertex3fv(backPolygon[i]);
+		glTexCoord2f(0, 0);
 		glVertex3fv(backPolygon[next]);
+		glTexCoord2f(0, 1);
 		glVertex3fv(frontPolygon[next]);
 	}
 	glEnd();
@@ -3811,8 +3837,22 @@ void lowerBodyWaist()
 
 	//Lower plate - polygon
 	glPushMatrix();
-	glTranslatef(0, -0.75, 0);
+	glTranslatef(0, -1, 0);
 	polygonPlate(5, frontPlateFrontPentagon, frontPlateBackPentagon);
+	glPopMatrix();
+
+	//Front plate - tiny prism
+	glPushMatrix();
+	glTranslatef(0, 0, 0.1);
+	glRotatef(90, 1, 0, 0);
+	for (int i = 0; i < 3; i++)
+	{
+		glPushMatrix();
+		glRotatef(i * 120, 0, 1, 0);
+		glTranslatef(0, 0, 0.75);
+		polygonPlate(3, side1Prism, side2Prism);
+		glPopMatrix();
+	}
 	glPopMatrix();
 
 	glPopMatrix();
@@ -3840,17 +3880,17 @@ void lowerBodyWaist()
 	glPushMatrix();
 
 	//Translation to up for upper plates
-	glTranslatef(0, 1.1, 0);
+	glTranslatef(0, 1.4, 0);
 
 	//Left upper plate - polygon
 	glPushMatrix();
-	glTranslatef(-0.9, 0, 0);
+	glTranslatef(-1.1, 0, 0);
 	polygonPlate(6, backPlateFrontHexagon, backPlateBackHexagon);
 	glPopMatrix();
 
 	//Right upper plate - polygon
 	glPushMatrix();
-	glTranslatef(0.9, 0, 0);
+	glTranslatef(1.1, 0, 0);
 	polygonPlate(6, backPlateFrontHexagon, backPlateBackHexagon);
 	glPopMatrix();
 
@@ -3858,8 +3898,25 @@ void lowerBodyWaist()
 
 	//Lower plate - polygon
 	glPushMatrix();
-	glTranslatef(0, -1, 0);
+	glTranslatef(0, -1.1, 0);
 	polygonPlate(5, backPlateFrontPentagon, backPlateBackPentagon);
+	glPopMatrix();
+
+
+
+	//Back plate - tiny prism
+	glPushMatrix();
+	glTranslatef(0, 0, -0.15);
+	glRotatef(90, 0, 0, 1);
+	glRotatef(-90, 1, 0, 0);
+	for (int i = 1; i <= 4; i++)
+	{
+		glPushMatrix();
+		glRotatef(45 + i * 90, 0, 1, 0);
+		glTranslatef(1.5, 0, 0);
+		polygonPlate(3, side1Prism, side2Prism);
+		glPopMatrix();
+	}
 	glPopMatrix();
 
 	glPopMatrix();
@@ -3885,6 +3942,10 @@ void lowerBodyThigh()
 	//Buttock
 	glPushMatrix();
 	drawSphereWithoutGLUAdvanced(1, 1.5, 1.25, 50, 50);
+	glPushMatrix();
+	glTranslatef(0, 0, 1);
+	polygonPlate(6, buttockFrontPlate, buttockBackPlate);
+	glPopMatrix();
 	glPopMatrix();
 
 	//Lower body - thigh
@@ -3903,13 +3964,24 @@ void lowerBodyThigh()
 	glTranslatef(0.9, 0, -0.9);
 	glRotatef(60, 0, 1, 0);
 	polygonPlate(5, thighSideFrontPlate, thighSideBackPlate);
+	glScalef(2, 2, 2);
+	glTranslatef(0, 0.25, 0.1);
+	glRotatef(90, 1, 0, 0);
+	glRotatef(-60, 0, 1, 0);
+	polygonPlate(3, side1Prism, side2Prism);
 	glPopMatrix();
 
 	//Thigh left side plate
 	glPushMatrix();
-	glTranslatef(-0.9, 0, -0.9);
-	glRotatef(120, 0, 1, 0);
+	glScalef(-1, 1, 1);
+	glTranslatef(0.9, 0, -0.9);
+	glRotatef(60, 0, 1, 0);
 	polygonPlate(5, thighSideFrontPlate, thighSideBackPlate);
+	glScalef(2, 2, 2);
+	glTranslatef(0, 0.25, 0.1);
+	glRotatef(90, 1, 0, 0);
+	glRotatef(-60, 0, 1, 0);
+	polygonPlate(3, side1Prism, side2Prism);
 	glPopMatrix();
 
 	//Translate to back
@@ -3936,14 +4008,14 @@ void lowerBodyKnee()
 
 	//Cylinder - Knee
 	glPushMatrix();
-	cylinder(1, 1, 0.5, 50, 50, style_gl);
+	cylinder(1, 1, 0.5, 50, 50, style_glu);
 	glPopMatrix();
 
 	//Circle - Knee
 	glPushMatrix();
-	disk(0, 1, 50, 50, style_gl);
+	disk(0, 1, 50, 50, style_glu);
 	glTranslatef(0, 0, 0.5);
-	disk(0, 1, 50, 50, style_gl);
+	disk(0, 1, 50, 50, style_glu);
 	glPopMatrix();
 
 	glPopMatrix();
@@ -3991,8 +4063,9 @@ void lowerBodyCalf()
 
 	//Armor left part
 	glPushMatrix();
-	glTranslatef(-1.4, 0, -0.25);
-	glRotatef(150, 0, 1, 0);
+	glScalef(-1, 1, 1);
+	glTranslatef(1.4, 0, -0.25);
+	glRotatef(30, 0, 1, 0);
 	polygonPlate(3, calfArmorSideFront, calfArmorSideBack);
 	glPopMatrix();
 
@@ -4000,8 +4073,26 @@ void lowerBodyCalf()
 
 	//Calf lower part
 	glPushMatrix();
-	glTranslatef(-0.5, -3, -0.5);
+
+	glTranslatef(0, -3, 0);
+	glPushMatrix();
+	glTranslatef(-0.5, 0, -0.5);
 	rect(1, 2, 1, style_gl);
+	glPopMatrix();
+
+	glPushMatrix();
+	glRotatef(90, 0, 1, 0);
+	for (int i = 0; i < 4; i++)
+	{
+		glPushMatrix();
+		glRotatef(i * 90, 0, 1, 0);
+		glTranslatef(-1, -0.5, 0);
+		glScalef(0.25, 1, 1);
+		polygonPlate(3, frontUpperSide1Leg, frontUpperSide2Leg);
+		glPopMatrix();
+	}
+	glPopMatrix();
+
 	glPopMatrix();
 
 	glPopMatrix();
@@ -4014,23 +4105,24 @@ void lowerBodyLeg()
 	//Lower body - leg
 	glPushMatrix();
 
-	glTranslatef(1.75, -3.75, 0);
+	glTranslatef(1.75, -4, 0);
 	glRotatef(90, 0, 1, 0);
 
 	glPushMatrix();
-	glTranslatef(0, -8, 0);
+	glTranslatef(0, -8.25, 0);
 
 	//Calf and leg connection
 	glPushMatrix();
-	glTranslatef(-0.4, 0, -0.4);
-	rect(0.8, 2, 0.8, style_gl);
+	glTranslatef(-0.25, 0, -0.25);
+	rect(0.5, 3, 0.5, style_gl);
 	glPopMatrix();
 
 	//Front leg
 	glPushMatrix();
-	glTranslatef(-2, 0, 0);
-	polygonPlate(4, frontLowerSide1Leg, frontLowerSide2Leg);
+	glTranslatef(-1, 0, 0);
 	polygonPlate(3, frontUpperSide1Leg, frontUpperSide2Leg);
+	//glTranslatef(-1, 0, 0);
+	polygonPlate(4, frontLowerSide1Leg, frontLowerSide2Leg);
 	glPopMatrix();
 
 	//Back leg
@@ -4100,7 +4192,11 @@ void lowerBody()
 	lowerBodyLegStructure(false);
 	glPopMatrix();
 
-	glPopMatrix();// r90
+	//Left leg
+	glPushMatrix();
+	glScalef(-1, 1, 1);
+	lowerBodyLegStructure(true);
+	glPopMatrix();
 }
 //----------------end---------------------------
 
@@ -4115,8 +4211,6 @@ void display()
 	
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-
-	texture = LoadTexture("Box.bmp");
 
 	glPushMatrix();
 	camera();
@@ -4158,7 +4252,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int nCmdShow)
 	if (!RegisterClassEx(&wc)) return false;
 
 	HWND hWnd = CreateWindow(WINDOW_TITLE, WINDOW_TITLE, WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, CW_USEDEFAULT, windowWidth, windowHeight,
+		CW_USEDEFAULT, CW_USEDEFAULT, 800, 600,
 		NULL, NULL, wc.hInstance, NULL);
 
 	//--------------------------------
