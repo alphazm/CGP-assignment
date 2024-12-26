@@ -136,10 +136,13 @@ float clamp(float value, float min, float max) {
 	return value;
 }
 
+//Draw style for lower body
+GLenum polygonFaceGLStyle = GL_POLYGON, polygonSideGLStyle = GL_QUADS, sphereGLStyle = GL_TRIANGLE_STRIP;
+
 //Rotation for lower body animation
 float waistLeftThighRotation = 0, waistRightThighRotation = 0, waistThighMinRotation = -45, waistThighMaxRotation = 90;
 float thighLeftCalfRotation = 0, thighRightCalfRotation = 0, thighCalfMinRotation = 0, thighCalfMaxRotation = 45;
-float calfLeftLegRotation = 0, calfRightLegRotation = 0, calfLegMinRotation = -30, calfLegMaxRotation = 30;
+float calfLeftLegRotation = 0, calfRightLegRotation = 0, calfLegMinRotation = -15, calfLegMaxRotation = 15;
 
 //Lower body part translation
 float thightX = 1.75, thighY = -0.25, thighZ = 0;
@@ -379,6 +382,7 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
+
 //--------------------------------------------------------------------
 
 bool initPixelFormat(HDC hdc)
@@ -411,8 +415,10 @@ bool initPixelFormat(HDC hdc)
 		return false;
 	}
 }
+
 //--------------------------------------------------------------------
-void rect(float x, float y, float z,GLenum style) {
+
+void rect(float x, float y, float z, GLenum style) {
 
 	//bottom
 	glBegin(style);
@@ -466,6 +472,7 @@ void sphere(float radius, float slice, float stack, GLenum style) {
 	gluSphere(obj, radius, slice, stack);
 	gluDeleteQuadric(obj);
 }
+
 void cylinder(float bottom, float top, float height, int slice, int stack, GLenum style) {
 	obj = gluNewQuadric();
 	gluQuadricDrawStyle(obj, style);
@@ -474,7 +481,7 @@ void cylinder(float bottom, float top, float height, int slice, int stack, GLenu
 	gluDeleteQuadric(obj);
 }
 
-void disk(float iner, float outer, int slice, int stack,  GLenum style) {
+void disk(float iner, float outer, int slice, int stack, GLenum style) {
 	obj = gluNewQuadric();
 	gluQuadricDrawStyle(obj, style);
 	gluQuadricTexture(obj, textureSwitch);
@@ -514,10 +521,10 @@ void drawSphereWithoutGLU(GLfloat radius = 0.35, int sliceNo = 30, int stackNo =
 	}
 }
 
-void drawSphereWithoutGLUAdvanced(GLfloat xRadius = 0.35, GLfloat yRadius = 0.35, GLfloat zRadius = 0.35, int sliceNo = 30, int stackNo = 30)
+//Sphere with customizable radius in 3 axes
+void drawSphereWithoutGLUAdvanced(GLfloat xRadius, GLfloat yRadius, GLfloat zRadius, int sliceNo, int stackNo)
 {
-	GLfloat x, y, z, sliceA, stackA;
-	GLfloat u, v;
+	GLfloat x, y, z, u, v, sliceA, stackA;
 
 	for (sliceA = 0.0; sliceA < 2 * PI; sliceA += PI / sliceNo)
 	{
@@ -527,16 +534,21 @@ void drawSphereWithoutGLUAdvanced(GLfloat xRadius = 0.35, GLfloat yRadius = 0.35
 			x = xRadius * cos(stackA) * sin(sliceA);
 			y = yRadius * sin(stackA) * sin(sliceA);
 			z = zRadius * cos(sliceA);
-			u = stackA / (2 * PI); // Map longitude to [0, 1]
-			v = sliceA / (2 * PI); // Map latitude to [0, 1]
-			glTexCoord2f(u, v);
+
+			u = sliceA / (2 * PI);         // u: Longitude as a fraction of 2*PI
+			v = stackA / PI;              // v: Latitude as a fraction of PI
+
+			glTexCoord2f(u, v);			// Assign texture coordinate
 			glVertex3f(x, y, z);
+
 			x = xRadius * cos(stackA) * sin(sliceA + PI / stackNo);
 			y = yRadius * sin(stackA) * sin(sliceA + PI / sliceNo);
 			z = zRadius * cos(sliceA + PI / sliceNo);
-			u = stackA / (2 * PI); // Map longitude to [0, 1]
-			v = (sliceA + PI / sliceNo) / (2 * PI); // Adjust latitude
-			glTexCoord2f(u, v);
+
+			u = (sliceA + PI / sliceNo) / (2 * PI); // Adjust u for the next slice
+			v = stackA / PI;                        // v stays the same
+
+			glTexCoord2f(u, v);			// Assign texture coordinate
 			glVertex3f(x, y, z);
 		}
 		glEnd();
@@ -3327,6 +3339,20 @@ void lowerBodyWaist()
 	}
 	glPopMatrix();
 
+	//Front plate - tiny prism
+	glPushMatrix();
+	glTranslatef(0, 0, 0.1);
+	glRotatef(90, 1, 0, 0);
+	for (int i = 0; i < 3; i++)
+	{
+		glPushMatrix();
+		glRotatef(i * 120, 0, 1, 0);
+		glTranslatef(0, 0, 0.75);
+		polygonPlate(3, side1Prism, side2Prism);
+		glPopMatrix();
+	}
+	glPopMatrix();
+
 	glPopMatrix();
 
 
@@ -3392,6 +3418,23 @@ void lowerBodyWaist()
 		glBindTexture(GL_TEXTURE_2D, textureArr[2]);
 		polygonPlate(3, side1Prism, side2Prism);
 		glBindTexture(GL_TEXTURE_2D, 0);
+		glPopMatrix();
+	}
+	glPopMatrix();
+
+
+
+	//Back plate - tiny prism
+	glPushMatrix();
+	glTranslatef(0, 0, -0.15);
+	glRotatef(90, 0, 0, 1);
+	glRotatef(-90, 1, 0, 0);
+	for (int i = 1; i <= 4; i++)
+	{
+		glPushMatrix();
+		glRotatef(45 + i * 90, 0, 1, 0);
+		glTranslatef(1.5, 0, 0);
+		polygonPlate(3, side1Prism, side2Prism);
 		glPopMatrix();
 	}
 	glPopMatrix();
@@ -3591,6 +3634,21 @@ void lowerBodyCalf()
 		glBindTexture(GL_TEXTURE_2D, textureArr[2]);
 		polygonPlate(3, frontUpperSide1Leg, frontUpperSide2Leg);
 		glBindTexture(GL_TEXTURE_2D, 0);
+		glPopMatrix();
+	}
+	glPopMatrix();
+
+	glPopMatrix();
+
+	glPushMatrix();
+	glRotatef(90, 0, 1, 0);
+	for (int i = 0; i < 4; i++)
+	{
+		glPushMatrix();
+		glRotatef(i * 90, 0, 1, 0);
+		glTranslatef(-1, -0.5, 0);
+		glScalef(0.25, 1, 1);
+		polygonPlate(3, frontUpperSide1Leg, frontUpperSide2Leg);
 		glPopMatrix();
 	}
 	glPopMatrix();
