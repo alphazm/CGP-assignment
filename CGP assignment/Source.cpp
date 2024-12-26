@@ -112,11 +112,15 @@ float hand_min_angle = 0;
 float hand_left_current_angle = hand_min_angle;
 float hand_right_current_angle = hand_min_angle;
 float arm_upper_max_angle_z = 80;
-float arm_upper_min_angle_z = -90;
+float arm_upper_min_angle_z = -80;
 float arm_upper_right_current_angle_z = 0;
 float arm_upper_left_current_angle_z = 0;
-float arm_upper_max_angle_y = -90;
-float arm_upper_min_angle_y = 0;
+float arm_upper_max_angle_x = 80;
+float arm_upper_min_angle_x = -80;
+float arm_upper_right_current_angle_x = 0;
+float arm_upper_left_current_angle_x = 0;
+float arm_upper_max_angle_y = -80;
+float arm_upper_min_angle_y = 10;
 float arm_upper_left_current_angle_y = arm_upper_min_angle_y;
 float arm_upper_right_current_angle_y = arm_upper_min_angle_y;
 float arm_lower_max_angle = -120;
@@ -130,9 +134,15 @@ float head_max_angle = 45;
 float head_min_angle = -45;
 float head_current_angle = 0;
 
+float clamp(float value, float min, float max) {
+	if (value < min) return min;
+	if (value > max) return max;
+	return value;
+}
+
 //Rotation for lower body animation
 float waistLeftThighRotation = 0, waistRightThighRotation = 0, waistThighMinRotation = -45, waistThighMaxRotation = 90;
-float thighLeftCalfRotation = 0, thighRightCalfRotation = 0, thighCalfMinRotation = -45, thighCalfMaxRotation = 0;
+float thighLeftCalfRotation = 0, thighRightCalfRotation = 0, thighCalfMinRotation = 0, thighCalfMaxRotation = 45;
 float calfLeftLegRotation = 0, calfRightLegRotation = 0, calfLegMinRotation = -30, calfLegMaxRotation = 30;
 
 //Lower body part translation
@@ -159,10 +169,62 @@ bool colorSwitch = true;
 
 GLUquadricObj* obj = NULL;
 
-void walkAnimation() {
-	if (walk)
-	{
 
+float animationSpeed = 0.01; // Speed of the walking animation
+float animationTime = 0.0;   // Keeps track of the current time in the animation
+void updateWalkingAnimation() {
+	// Update animation time
+	if (walk) {
+		animationTime += animationSpeed;
+
+		// Arms stay slightly outward from the body (Z-axis)
+		arm_upper_left_current_angle_z = clamp(arm_upper_min_angle_z, arm_upper_min_angle_z, arm_upper_max_angle_z);
+		arm_upper_right_current_angle_z = clamp(arm_upper_min_angle_z, arm_upper_min_angle_z, arm_upper_max_angle_z);
+
+		// Add slight outward/inward motion (Y-axis)
+		arm_upper_left_current_angle_y = clamp(-40 * cos(animationTime ), arm_upper_max_angle_y, arm_upper_min_angle_y);
+		arm_upper_right_current_angle_y = clamp(40 * cos(animationTime ), arm_upper_max_angle_y, arm_upper_min_angle_y);
+
+		// Slight elbow bend for natural motion
+		arm_lower_left_current_angle = clamp(30 * sin(animationTime), arm_lower_max_angle, arm_lower_min_angle);
+		arm_lower_right_current_angle = clamp(-30 * sin(animationTime), arm_lower_max_angle, arm_lower_min_angle);
+
+		// Legs alternate swinging forward and backward
+		waistLeftThighRotation = clamp(20 * sin(animationTime), waistThighMinRotation, waistThighMaxRotation);
+		waistRightThighRotation = clamp(-20 * sin(animationTime), waistThighMinRotation, waistThighMaxRotation);
+
+		// Calves adjust to leg motion
+		thighLeftCalfRotation = clamp(-30 * cos(animationTime ), thighCalfMinRotation, thighCalfMaxRotation);
+		thighRightCalfRotation = clamp(30 * cos(animationTime), thighCalfMinRotation, thighCalfMaxRotation);
+
+		// Feet adjust slightly for natural gait
+		calfLeftLegRotation = clamp(10 * cos(animationTime), calfLegMinRotation, calfLegMaxRotation);
+		calfRightLegRotation = clamp(10 * cos(animationTime), calfLegMinRotation, calfLegMaxRotation);
+
+		// Body sway and head counter-movement
+		body_current_angle = clamp(15 * sin(animationTime ), body_min_angle, body_max_angle);
+		head_current_angle = clamp(-5 * sin(animationTime ), head_min_angle, head_max_angle);
+
+	}
+	else
+	{
+		finger_current_angle = finger_min_angle;
+		hand_left_current_angle = hand_min_angle;
+		hand_right_current_angle = hand_min_angle;
+		arm_upper_right_current_angle_z = 0;
+		arm_upper_left_current_angle_z = 0;
+		arm_upper_right_current_angle_x = 0;
+		arm_upper_left_current_angle_x = 0;
+		arm_upper_left_current_angle_y = arm_upper_min_angle_y;
+		arm_upper_right_current_angle_y = arm_upper_min_angle_y;
+		arm_lower_left_current_angle = arm_lower_min_angle;
+		arm_lower_right_current_angle = arm_lower_min_angle;
+		body_current_angle = 0;
+		head_current_angle = 0;
+		waistLeftThighRotation = 0, waistRightThighRotation = 0;
+		thighLeftCalfRotation = 0, thighRightCalfRotation = 0;
+		calfLeftLegRotation = 0, calfRightLegRotation = 0;
+	
 	}
 }
 
@@ -206,8 +268,10 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			/*if (arm_upper_current_angle_y > arm_upper_max_angle_y)
 				arm_upper_current_angle_y -= speed+5;*/
 
-			/*if (arm_upper_current_angle_z < arm_upper_max_angle_z)
-				arm_upper_current_angle_z += speed + 5;*/
+			if (arm_upper_left_current_angle_z < arm_upper_max_angle_z)
+				arm_upper_left_current_angle_z += speed + 5;
+			if (arm_upper_right_current_angle_z < arm_upper_max_angle_z)
+				arm_upper_right_current_angle_z += speed + 5;
 
 			/*if (hand_right_current_angle > hand_max_angle)
 				hand_right_current_angle -= speed + 5;*/
@@ -228,8 +292,11 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			/*if (arm_upper_current_angle_y < arm_upper_min_angle_y)
 				arm_upper_current_angle_y += speed+5;*/
 
-			/*if (arm_upper_current_angle_z > arm_upper_min_angle_z)
-				arm_upper_current_angle_z -= speed + 5;*/
+			if (arm_upper_left_current_angle_z > arm_upper_min_angle_z)
+				arm_upper_left_current_angle_z -= speed + 5;
+			if (arm_upper_right_current_angle_z > arm_upper_min_angle_z)
+				arm_upper_right_current_angle_z -= speed + 5;
+
 
 			/*if (hand_right_current_angle < hand_min_angle)
 				hand_right_current_angle += speed + 5;*/
@@ -1341,11 +1408,13 @@ void arm_upper(bool left) {
 	if (left) {
 		glRotatef(arm_upper_left_current_angle_y, 0, 1, 0);
 		glRotatef(arm_upper_left_current_angle_z, 0, 0, 1);
+		glRotatef(arm_upper_left_current_angle_x, 1, 0, 0);
 	}
 	else
 	{
 		glRotatef(arm_upper_right_current_angle_y, 0, 1, 0);
 		glRotatef(arm_upper_right_current_angle_z, 0, 0, 1);
+		glRotatef(arm_upper_right_current_angle_x, 1, 0, 0);
 	}
 	
 	glPushMatrix();
@@ -3986,6 +4055,8 @@ void display()
 	glPushMatrix();
 	camera();
 	
+	updateWalkingAnimation();
+
 	glPushMatrix();	
 	glTranslatef(0,7.5,0);
 	glRotatef(180, 0, 1, 0);
