@@ -157,12 +157,12 @@ HBITMAP hBMP = NULL;
 bool textureSwitch = false;
 int textureCount = 0;
 GLuint textureArr[5]; //0 for armmor, 1 for join part, 2 for detail, 3 for shiny part
-LPCSTR  textureName = "";
 
 //color 
 float r, g, b;
 float colorR = 0, colorG = 0, colorB = 0;
 bool colorSwitch = true;
+bool trigger = true;
 color red = { 1.0,0.0,0.0 }, green = { 0.0,1.0,0.0 }, blue = { 0.0,0.0,1.0 };
 color yellow = { 1.0,1.0,0.0 }, magenta = { 1.0,0.0,1.0 }, cyan = { 0.0,1.0,1.0 };
 color black = { 0.01,0.01,0.01 }, white = { 0.99,0.99,0.99 };
@@ -172,6 +172,8 @@ color lime = { 0.0,1.0,0.5 };
 GLUquadricObj* obj = NULL;
 int  lightSwitch = 0, materialSwitch = 0;
 
+float rotationStep = 5.0;
+int parts=0;
 float animationSpeed = 0.01; // Speed of the walking animation
 float animationTime = 0.0;   // Keeps track of the current time in the animation
 void updateWalkingAnimation() {
@@ -200,33 +202,35 @@ void updateWalkingAnimation() {
 		thighRightCalfRotation = clamp(30 * cos(animationTime), thighCalfMinRotation, thighCalfMaxRotation);
 
 		// Feet adjust slightly for natural gait
-		calfLeftLegRotation = clamp(10 * cos(animationTime), calfLegMinRotation, calfLegMaxRotation);
-		calfRightLegRotation = clamp(10 * cos(animationTime), calfLegMinRotation, calfLegMaxRotation);
+		calfLeftLegRotation = clamp(5  * sin(animationTime), calfLegMinRotation, calfLegMaxRotation);
+		calfRightLegRotation = clamp(5  * sin(animationTime), calfLegMinRotation, calfLegMaxRotation);
 
 		// Body sway and head counter-movement
 		body_current_angle = clamp(15 * sin(animationTime), body_min_angle, body_max_angle);
 		head_current_angle = clamp(-5 * sin(animationTime), head_min_angle, head_max_angle);
-
+		trigger = true;
 	}
 	else
 	{
-		finger_current_angle = finger_min_angle;
-		hand_left_current_angle = hand_min_angle;
-		hand_right_current_angle = hand_min_angle;
-		arm_upper_right_current_angle_z = 0;
-		arm_upper_left_current_angle_z = 0;
-		arm_upper_right_current_angle_x = 0;
-		arm_upper_left_current_angle_x = 0;
-		arm_upper_left_current_angle_y = arm_upper_min_angle_y;
-		arm_upper_right_current_angle_y = arm_upper_min_angle_y;
-		arm_lower_left_current_angle = arm_lower_min_angle;
-		arm_lower_right_current_angle = arm_lower_min_angle;
-		body_current_angle = 0;
-		head_current_angle = 0;
-		waistLeftThighRotation = 0, waistRightThighRotation = 0;
-		thighLeftCalfRotation = 0, thighRightCalfRotation = 0;
-		calfLeftLegRotation = 0, calfRightLegRotation = 0;
-
+		if (trigger) {
+			finger_current_angle = finger_min_angle;
+			hand_left_current_angle = hand_min_angle;
+			hand_right_current_angle = hand_min_angle;
+			arm_upper_right_current_angle_z = 0;
+			arm_upper_left_current_angle_z = 0;
+			arm_upper_right_current_angle_x = 0;
+			arm_upper_left_current_angle_x = 0;
+			arm_upper_left_current_angle_y = arm_upper_min_angle_y;
+			arm_upper_right_current_angle_y = arm_upper_min_angle_y;
+			arm_lower_left_current_angle = arm_lower_min_angle;
+			arm_lower_right_current_angle = arm_lower_min_angle;
+			body_current_angle = 0;
+			head_current_angle = 0;
+			waistLeftThighRotation = 0, waistRightThighRotation = 0;
+			thighLeftCalfRotation = 0, thighRightCalfRotation = 0;
+			calfLeftLegRotation = 0, calfRightLegRotation = 0;
+			trigger = false;
+		}
 	}
 }
 
@@ -298,56 +302,66 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 		if (wParam == 'M') { changeMaterial = !changeMaterial; }
 		if (wParam == 'L') { lightSwitch = !lightSwitch; }
 		if (wParam == 'O') { ortho = !ortho; }
-		if (wParam == 'B') {
-			/*if (arm_upper_current_angle_y > arm_upper_max_angle_y)
-				arm_upper_current_angle_y -= speed+5;*/
+		if (wParam == 'B') { parts++; parts %= 16; }
+		if (wParam == 'N' && !walk) {
+			switch (parts)
+			{
+			case 0: waistLeftThighRotation = clamp(waistLeftThighRotation + rotationStep, waistThighMinRotation, waistThighMaxRotation); break;
+			case 1: waistLeftThighRotation = clamp(waistLeftThighRotation + rotationStep, waistThighMinRotation, waistThighMaxRotation); break;
 
-				/*if (arm_upper_left_current_angle_z < arm_upper_max_angle_z)
-					arm_upper_left_current_angle_z += speed + 5;
-				if (arm_upper_right_current_angle_z < arm_upper_max_angle_z)
-					arm_upper_right_current_angle_z += speed + 5;*/
+			case 2: thighLeftCalfRotation = clamp(thighLeftCalfRotation + rotationStep, thighCalfMinRotation, thighCalfMaxRotation); break;
+			case 3: thighRightCalfRotation = clamp(thighRightCalfRotation + rotationStep, thighCalfMinRotation, thighCalfMaxRotation); break;
 
-					/*if (hand_right_current_angle > hand_max_angle)
-						hand_right_current_angle -= speed + 5;*/
+			case 4: calfLeftLegRotation = clamp(calfLeftLegRotation + rotationStep, calfLegMinRotation, calfLegMaxRotation); break;
+			case 5: calfRightLegRotation = clamp(calfRightLegRotation + rotationStep, calfLegMinRotation, calfLegMaxRotation); break;
 
-						/*if (arm_lower_current_angle > arm_lower_max_angle)
-							arm_lower_current_angle -= speed + 5;*/
+			case 6: arm_upper_left_current_angle_z = clamp(arm_upper_left_current_angle_z + rotationStep, arm_upper_min_angle_z, arm_upper_max_angle_z); break;
+			case 7: arm_upper_left_current_angle_y = clamp(arm_upper_left_current_angle_y + rotationStep, arm_upper_min_angle_y, arm_upper_max_angle_y); break;
 
-							/*if (finger_current_angle < finger_max_angle)
-								finger_current_angle += speed + 5;*/
+			case 8: arm_upper_right_current_angle_z = clamp(arm_upper_right_current_angle_z + rotationStep, arm_upper_max_angle_z, arm_upper_min_angle_z); break;
+			case 9: arm_upper_right_current_angle_y = clamp(arm_upper_right_current_angle_y + rotationStep, arm_upper_max_angle_y, arm_upper_min_angle_y); break;
 
-								/*if (body_current_angle < body_max_angle)
-									body_current_angle += speed + 5;*/
+			case 10: body_current_angle = clamp(body_current_angle + rotationStep, body_min_angle, body_max_angle); break;
 
-									/*if (head_current_angle < head_max_angle)
-										head_current_angle += speed + 5;*/
+			case 11: head_current_angle = clamp(head_current_angle + rotationStep, head_min_angle, head_max_angle); break;
+
+			case 12: arm_lower_left_current_angle = clamp(arm_lower_left_current_angle + rotationStep, arm_lower_max_angle, arm_lower_min_angle); break;
+			case 13: arm_lower_right_current_angle = clamp(arm_lower_right_current_angle + rotationStep, arm_lower_max_angle, arm_lower_min_angle); break;
+
+			case 14: hand_left_current_angle = clamp(hand_left_current_angle + rotationStep, hand_max_angle, hand_min_angle); break;
+			case 15: hand_right_current_angle = clamp(hand_right_current_angle + rotationStep, hand_max_angle, hand_min_angle); break;
+			}
 		}
-		if (wParam == 'N') {
-			/*if (arm_upper_current_angle_y < arm_upper_min_angle_y)
-				arm_upper_current_angle_y += speed+5;*/
+		if (wParam == 'M') {
+			switch (parts)
+			{
+			case 0: waistLeftThighRotation = clamp(waistLeftThighRotation - rotationStep, waistThighMinRotation, waistThighMaxRotation); break;
+			case 1: waistLeftThighRotation = clamp(waistLeftThighRotation - rotationStep, waistThighMinRotation, waistThighMaxRotation); break;
 
-				/*if (arm_upper_left_current_angle_z > arm_upper_min_angle_z)
-					arm_upper_left_current_angle_z -= speed + 5;
-				if (arm_upper_right_current_angle_z > arm_upper_min_angle_z)
-					arm_upper_right_current_angle_z -= speed + 5;*/
+			case 2: thighLeftCalfRotation = clamp(thighLeftCalfRotation - rotationStep, thighCalfMinRotation, thighCalfMaxRotation); break;
+			case 3: thighRightCalfRotation = clamp(thighRightCalfRotation - rotationStep, thighCalfMinRotation, thighCalfMaxRotation); break;
 
+			case 4: calfLeftLegRotation = clamp(calfLeftLegRotation - rotationStep, calfLegMinRotation, calfLegMaxRotation); break;
+			case 5: calfRightLegRotation = clamp(calfRightLegRotation - rotationStep, calfLegMinRotation, calfLegMaxRotation); break;
 
-					/*if (hand_right_current_angle < hand_min_angle)
-						hand_right_current_angle += speed + 5;*/
+			case 6: arm_upper_left_current_angle_z = clamp(arm_upper_left_current_angle_z - rotationStep, arm_upper_min_angle_z, arm_upper_max_angle_z); break;
+			case 7: arm_upper_left_current_angle_y = clamp(arm_upper_left_current_angle_y - rotationStep, arm_upper_min_angle_y, arm_upper_max_angle_y); break;
 
-						/*if (arm_lower_current_angle < arm_lower_min_angle)
-							arm_lower_current_angle += speed + 5;*/
+			case 8: arm_upper_right_current_angle_z = clamp(arm_upper_right_current_angle_z - rotationStep, arm_upper_max_angle_z, arm_upper_min_angle_z); break;
+			case 9: arm_upper_right_current_angle_y = clamp(arm_upper_right_current_angle_y - rotationStep, arm_upper_max_angle_y, arm_upper_min_angle_y); break;
 
-							/*if (finger_current_angle > finger_min_angle)
-								finger_current_angle -= speed + 5;*/
+			case 10: body_current_angle = clamp(body_current_angle - rotationStep, body_min_angle, body_max_angle); break;
 
-								/*if (body_current_angle > body_min_angle)
-									body_current_angle -= speed + 5;*/
+			case 11: head_current_angle = clamp(head_current_angle - rotationStep, head_min_angle, head_max_angle); break;
 
-									/*if (head_current_angle > head_min_angle)
-										head_current_angle -= speed + 5;*/
+			case 12: arm_lower_left_current_angle = clamp(arm_lower_left_current_angle - rotationStep, arm_lower_max_angle, arm_lower_min_angle); break;
+			case 13: arm_lower_right_current_angle = clamp(arm_lower_right_current_angle - rotationStep, arm_lower_max_angle, arm_lower_min_angle); break;
 
+			case 14: hand_left_current_angle = clamp(hand_left_current_angle - rotationStep, hand_max_angle, hand_min_angle); break;
+			case 15: hand_right_current_angle = clamp(hand_right_current_angle - rotationStep, hand_max_angle, hand_min_angle); break;
+			}
 		}
+
 		if (wParam == VK_ESCAPE) PostQuitMessage(0);
 		if (wParam == VK_UP) { pitch += speed; }
 		if (wParam == VK_DOWN) { pitch -= speed; }
