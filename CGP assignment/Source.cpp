@@ -93,11 +93,10 @@ bool ortho = false;
 //lighting
 float ambL[] = { 1.0, 1.0,1.0 };
 float difL[] = { 1.0, 1.0, 1.0 };
-float posA[] = { 0,3,0 };
-float posB[] = { 0,3,0 };
+float posA[] = { 0,6,0 };
+float posB[] = { 0,6,0 };
 float ambM[] = { 0.2, 0.2, 0.2, 1.0 }; // Low ambient reflection
 float difM[] = { 0.5, 0.5, 0.5, 1.0 }; // Strong diffuse reflection
-bool changeMaterial = false;
 
 //animation
 float finger_max_angle = 45;
@@ -299,7 +298,6 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 		}
 		if (wParam == 'T') { textureSwitch = !textureSwitch; }
 		if (wParam == 'C') { colorSwitch = !colorSwitch; }
-		if (wParam == 'M') { changeMaterial = !changeMaterial; }
 		if (wParam == 'L') { lightSwitch = !lightSwitch; }
 		if (wParam == 'O') { ortho = !ortho; }
 		if (wParam == 'B') { parts++; parts %= 16; }
@@ -585,15 +583,7 @@ void light() {
 	glLightfv(GL_LIGHT1, GL_POSITION, posB);
 	glEnable(GL_LIGHT1);
 
-
-
-	if (changeMaterial) {
-		glMaterialfv(GL_FRONT, GL_AMBIENT, ambM);
-	}
-	else
-	{
-		glMaterialfv(GL_FRONT, GL_DIFFUSE, difM);
-	}
+	glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, difM);
 
 }
 
