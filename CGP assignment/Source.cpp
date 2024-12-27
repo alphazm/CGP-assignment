@@ -202,7 +202,7 @@ void updateWalkingAnimation() {
 		thighRightCalfRotation = clamp(30 * cos(animationTime), thighCalfMinRotation, thighCalfMaxRotation);
 
 		// Feet adjust slightly for natural gait
-		calfLeftLegRotation = clamp(5  * sin(animationTime), calfLegMinRotation, calfLegMaxRotation);
+		calfLeftLegRotation = clamp(-5  * sin(animationTime), calfLegMinRotation, calfLegMaxRotation);
 		calfRightLegRotation = clamp(5  * sin(animationTime), calfLegMinRotation, calfLegMaxRotation);
 
 		// Body sway and head counter-movement
@@ -307,7 +307,7 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			switch (parts)
 			{
 			case 0: waistLeftThighRotation = clamp(waistLeftThighRotation + rotationStep, waistThighMinRotation, waistThighMaxRotation); break;
-			case 1: waistLeftThighRotation = clamp(waistLeftThighRotation + rotationStep, waistThighMinRotation, waistThighMaxRotation); break;
+			case 1: waistRightThighRotation = clamp(waistRightThighRotation + rotationStep, waistThighMinRotation, waistThighMaxRotation); break;
 
 			case 2: thighLeftCalfRotation = clamp(thighLeftCalfRotation + rotationStep, thighCalfMinRotation, thighCalfMaxRotation); break;
 			case 3: thighRightCalfRotation = clamp(thighRightCalfRotation + rotationStep, thighCalfMinRotation, thighCalfMaxRotation); break;
@@ -316,9 +316,9 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			case 5: calfRightLegRotation = clamp(calfRightLegRotation + rotationStep, calfLegMinRotation, calfLegMaxRotation); break;
 
 			case 6: arm_upper_left_current_angle_z = clamp(arm_upper_left_current_angle_z + rotationStep, arm_upper_min_angle_z, arm_upper_max_angle_z); break;
-			case 7: arm_upper_left_current_angle_y = clamp(arm_upper_left_current_angle_y + rotationStep, arm_upper_min_angle_y, arm_upper_max_angle_y); break;
+			case 7: arm_upper_left_current_angle_y = clamp(arm_upper_left_current_angle_y + rotationStep, arm_upper_max_angle_y, arm_upper_min_angle_y); break;
 
-			case 8: arm_upper_right_current_angle_z = clamp(arm_upper_right_current_angle_z + rotationStep, arm_upper_max_angle_z, arm_upper_min_angle_z); break;
+			case 8: arm_upper_right_current_angle_z = clamp(arm_upper_right_current_angle_z + rotationStep, arm_upper_min_angle_z, arm_upper_max_angle_z); break;
 			case 9: arm_upper_right_current_angle_y = clamp(arm_upper_right_current_angle_y + rotationStep, arm_upper_max_angle_y, arm_upper_min_angle_y); break;
 
 			case 10: body_current_angle = clamp(body_current_angle + rotationStep, body_min_angle, body_max_angle); break;
@@ -336,7 +336,7 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			switch (parts)
 			{
 			case 0: waistLeftThighRotation = clamp(waistLeftThighRotation - rotationStep, waistThighMinRotation, waistThighMaxRotation); break;
-			case 1: waistLeftThighRotation = clamp(waistLeftThighRotation - rotationStep, waistThighMinRotation, waistThighMaxRotation); break;
+			case 1: waistRightThighRotation = clamp(waistRightThighRotation - rotationStep, waistThighMinRotation, waistThighMaxRotation); break;
 
 			case 2: thighLeftCalfRotation = clamp(thighLeftCalfRotation - rotationStep, thighCalfMinRotation, thighCalfMaxRotation); break;
 			case 3: thighRightCalfRotation = clamp(thighRightCalfRotation - rotationStep, thighCalfMinRotation, thighCalfMaxRotation); break;
@@ -345,10 +345,11 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			case 5: calfRightLegRotation = clamp(calfRightLegRotation - rotationStep, calfLegMinRotation, calfLegMaxRotation); break;
 
 			case 6: arm_upper_left_current_angle_z = clamp(arm_upper_left_current_angle_z - rotationStep, arm_upper_min_angle_z, arm_upper_max_angle_z); break;
-			case 7: arm_upper_left_current_angle_y = clamp(arm_upper_left_current_angle_y - rotationStep, arm_upper_min_angle_y, arm_upper_max_angle_y); break;
+			case 7: arm_upper_left_current_angle_y = clamp(arm_upper_left_current_angle_y - rotationStep, arm_upper_max_angle_y, arm_upper_min_angle_y); break;
 
-			case 8: arm_upper_right_current_angle_z = clamp(arm_upper_right_current_angle_z - rotationStep, arm_upper_max_angle_z, arm_upper_min_angle_z); break;
+			case 8: arm_upper_right_current_angle_z = clamp(arm_upper_right_current_angle_z - rotationStep, arm_upper_min_angle_z, arm_upper_max_angle_z); break;
 			case 9: arm_upper_right_current_angle_y = clamp(arm_upper_right_current_angle_y - rotationStep, arm_upper_max_angle_y, arm_upper_min_angle_y); break;
+
 
 			case 10: body_current_angle = clamp(body_current_angle - rotationStep, body_min_angle, body_max_angle); break;
 
@@ -3690,7 +3691,7 @@ void lowerBodyLegStructure(bool left)
 	if (left)
 		glRotatef(calfLeftLegRotation, 1, 0, 0);
 	else
-		glRotatef(calfLeftLegRotation, 1, 0, 0);
+		glRotatef(calfRightLegRotation, 1, 0, 0);
 
 	glTranslatef(-legTranslationX, -legTranslationY, -legTranslationZ);
 	lowerBodyLeg();
