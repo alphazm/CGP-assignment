@@ -86,17 +86,20 @@ GLenum style_glu = GLU_LINE, style_gl = GL_LINE_LOOP, style_gl_curve = GL_LINE_S
 //Draw style for lower body
 GLenum polygonFaceGLStyle = GL_LINE_LOOP, polygonSideGLStyle = GL_LINE_LOOP;
 int style_switch = 0;
+float tz;
 
-float Oner = -100, Ofar = 100, Pner = 0.1, Pfar = 100;
+//projection
+float Oner = -100, Ofar = 100, Pner = 0.1, Pfar = 200;
 bool ortho = false;
 
 //lighting
-float ambL[] = { 1.0, 1.0,1.0 };
-float difL[] = { 1.0, 1.0, 1.0 };
-float posA[] = { 0,6,0 };
-float posB[] = { 0,6,0 };
-float ambM[] = { 0.2, 0.2, 0.2, 1.0 }; // Low ambient reflection
-float difM[] = { 0.5, 0.5, 0.5, 1.0 }; // Strong diffuse reflection
+bool lightSwitch = false, useAmbient = true, useSpotlight= false;
+float moveStep = 0.5f;
+float spotPosition[] = { 0.0f, 5.0f, 5.0f, 1.0f }; // Position of the spotlight
+float spotDirection[] = { 0.0f, -1.0f, -1.0f };    // Direction of the spotlight
+float ambM[] = { 0.2f, 0.2f, 0.2f, 1.0f }; // Low ambient reflection
+float difM[] = { 0.8f, 0.8f, 0.8f, 1.0f }; // Strong diffuse reflection
+float speM[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
 //animation
 float finger_max_angle = 45;
@@ -169,7 +172,7 @@ color purple = { 0.5,0.0,1.0 }, darkPurple = { 0.25,0.0,0.5 };
 color lime = { 0.0,1.0,0.5 };
 
 GLUquadricObj* obj = NULL;
-int  lightSwitch = 0, materialSwitch = 0;
+
 
 float rotationStep = 5.0;
 int parts=0;
@@ -179,7 +182,8 @@ void updateWalkingAnimation() {
 	// Update animation time
 	if (walk) {
 		animationTime += animationSpeed;
-
+		if(tz < Pfar/2)
+			tz += animationSpeed * 0.5;
 		// Arms stay slightly outward from the body (Z-axis)
 		arm_upper_left_current_angle_z = clamp(arm_upper_min_angle_z, arm_upper_min_angle_z, arm_upper_max_angle_z);
 		arm_upper_right_current_angle_z = clamp(arm_upper_min_angle_z, arm_upper_min_angle_z, arm_upper_max_angle_z);
@@ -215,8 +219,8 @@ void updateWalkingAnimation() {
 			finger_current_angle = finger_min_angle;
 			hand_left_current_angle = hand_min_angle;
 			hand_right_current_angle = hand_min_angle;
-			arm_upper_right_current_angle_z = 0;
-			arm_upper_left_current_angle_z = 0;
+			arm_upper_right_current_angle_z = -80;
+			arm_upper_left_current_angle_z = -80;
 			arm_upper_right_current_angle_x = 0;
 			arm_upper_left_current_angle_x = 0;
 			arm_upper_left_current_angle_y = arm_upper_min_angle_y;
@@ -242,6 +246,20 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 		break;
 
 	case WM_KEYDOWN:
+		if (lightSwitch) {
+			switch (wParam)
+			{
+			case 'W': spotPosition[1] += moveStep; break; // Move up
+			case 'S': spotPosition[1] -= moveStep; break; // Move down
+			case 'A': spotPosition[0] -= moveStep; break; // Move left
+			case 'D': spotPosition[0] += moveStep; break; // Move right
+			case 'Q': spotPosition[2] += moveStep; break; // Move forward
+			case 'E': spotPosition[2] -= moveStep; break; // Move backward
+			case '1': useAmbient = !useAmbient; break;
+			case '2': useSpotlight = !useSpotlight; break;
+			}
+		}
+
 		if (wParam == 'P') {
 			style_switch++;
 			style_switch %= 2;
@@ -263,9 +281,9 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			}
 			styleSwitch = !styleSwitch;
 		}
-		if (wParam == 'W') { walk = !walk; }
+		if (wParam == 'J') { walk = !walk; }
 		if (wParam == 'I') { weaponSwitch = !weaponSwitch; }
-		if (wParam == 'R') {
+		if (wParam == 'Y') {
 			textureCount++;
 			textureCount %= 3;
 			switch (textureCount)
@@ -366,13 +384,25 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 		if (wParam == VK_DOWN) { pitch -= speed; }
 		if (wParam == VK_LEFT) { yaw -= speed; }
 		if (wParam == VK_RIGHT) { yaw += speed; }
-		if (wParam == VK_OEM_PLUS) { radius -= 1.0f; }
-		if (wParam == VK_OEM_MINUS) { radius += 1.0f; }
+		if (wParam == VK_OEM_PLUS) { 
+			if (!ortho) {
+				if (radius > Pner+1 ) 
+					radius -= 1.0f;
+			}
+		}
+		if (wParam == VK_OEM_MINUS) { 
+			if (!ortho) {
+				if (radius < Pfar/2) 
+					radius += 1.0f;
+			}
+		}
 		if (wParam == VK_SPACE) {
 			radius = 50.0f;
 			yaw = 0.0f;
 			pitch = 0.0f;
-
+			tz = 0;
+			arm_upper_left_current_angle_z=0;
+			arm_upper_right_current_angle_z=0;
 		}
 		cameraPosition.x = target.x + radius * cos(yaw) * cos(pitch);
 		cameraPosition.y = target.y + radius * sin(pitch);
@@ -570,21 +600,42 @@ void projection() {
 }
 
 void light() {
-	if (lightSwitch)
+
+	float globalAmbient[] = { 0.6f, 0.6f, 0.6f, 1.0f };
+	float spotDiffuse[] = { 0.8f, 0.8f, 0.8f, 1.0f }; // Spotlight diffuse color
+	float spotSpecular[] = { 1.0f, 1.0f, 1.0f, 1.0f }; // Spotlight specular color
+
+	if (lightSwitch) {
 		glEnable(GL_LIGHTING);
-	else
+
+		if (useAmbient) {
+			// Enable ambient light (Sunlight)
+			glLightModelfv(GL_LIGHT_MODEL_AMBIENT, globalAmbient); // Set global ambient light
+			glDisable(GL_LIGHT1); // Ensure spotlight is off
+		}
+
+		if (useSpotlight) {
+			// Enable spotlight
+			glDisable(GL_LIGHT0); // Ensure ambient light is off
+			glLightfv(GL_LIGHT1, GL_DIFFUSE, spotDiffuse);       // Set spotlight diffuse color
+			glLightfv(GL_LIGHT1, GL_SPECULAR, spotSpecular);     // Set spotlight specular color
+			glLightfv(GL_LIGHT1, GL_POSITION, spotPosition);     // Set spotlight position
+			glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, spotDirection); // Set spotlight direction
+			glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, 45.0f);          // Spotlight cone angle
+			glLightf(GL_LIGHT1, GL_SPOT_EXPONENT, 10.0f);        // Spotlight intensity distribution
+			glEnable(GL_LIGHT1);
+		}
+
+		// Material properties
+		glMaterialfv(GL_FRONT, GL_AMBIENT, ambM);
+		glMaterialfv(GL_FRONT, GL_DIFFUSE, difM);
+		glMaterialfv(GL_FRONT, GL_SPECULAR, speM);
+		glMaterialf(GL_FRONT, GL_SHININESS, 50.0f); // Specular shininess
+
+	}
+	else {
 		glDisable(GL_LIGHTING);
-
-	glLightfv(GL_LIGHT0, GL_AMBIENT, ambL);
-	glLightfv(GL_LIGHT0, GL_POSITION, posA);
-	glEnable(GL_LIGHT0);
-
-	glLightfv(GL_LIGHT1, GL_DIFFUSE, difL);
-	glLightfv(GL_LIGHT1, GL_POSITION, posB);
-	glEnable(GL_LIGHT1);
-
-	glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, difM);
-
+	}
 }
 
 GLuint loadTexture(LPCSTR filename) {
@@ -3425,7 +3476,9 @@ void lowerBodyThigh()
 
 	//Buttock
 	glPushMatrix();
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
 	drawSphereWithoutGLUAdvanced(1, 1.5, 1.25, 50, 50);
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glPushMatrix();
 	glTranslatef(0, 0, 1);
 	glBindTexture(GL_TEXTURE_2D, textureArr[2]);
@@ -3581,6 +3634,7 @@ void lowerBodyCalf()
 	glTranslatef(0, -3, 0);
 	glPushMatrix();
 	glTranslatef(-0.5, 0, -0.5);
+	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
 	rect(1, 2, 1, style_gl);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopMatrix();
@@ -3732,6 +3786,8 @@ void display()
 
 	Texture();
 
+	glPushMatrix();//robot position
+	glTranslatef(0, 0, tz);
 
 	glPushMatrix();
 	glTranslatef(0, 7.5, 0);
@@ -3747,6 +3803,7 @@ void display()
 	lowerBody();
 	glPopMatrix();
 
+	glPopMatrix();//robot position
 
 	glPopMatrix();//camera
 }
