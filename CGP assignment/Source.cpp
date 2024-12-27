@@ -82,13 +82,13 @@ float radius = 50.0f;              // Distance from camera to target
 float yaw = 0.0f;                 // Horizontal angle (in radians)
 float pitch = 0.0f;               // Vertical angle (in radians)
 
-GLenum style_glu= GLU_LINE,style_gl=GL_LINE_LOOP,style_gl_curve = GL_LINE_STRIP;
+GLenum style_glu = GLU_LINE, style_gl = GL_LINE_LOOP, style_gl_curve = GL_LINE_STRIP;
 //Draw style for lower body
 GLenum polygonFaceGLStyle = GL_LINE_LOOP, polygonSideGLStyle = GL_LINE_LOOP;
-int style_switch=0;
+int style_switch = 0;
 
-float Oner=-100, Ofar=100, Pner=0.1, Pfar=100;
-bool ortho=false;
+float Oner = -100, Ofar = 100, Pner = 0.1, Pfar = 100;
+bool ortho = false;
 
 //lighting
 float ambL[] = { 1.0, 1.0,1.0 };
@@ -136,13 +136,10 @@ float clamp(float value, float min, float max) {
 	return value;
 }
 
-//Draw style for lower body
-GLenum polygonFaceGLStyle = GL_POLYGON, polygonSideGLStyle = GL_QUADS, sphereGLStyle = GL_TRIANGLE_STRIP;
-
 //Rotation for lower body animation
 float waistLeftThighRotation = 0, waistRightThighRotation = 0, waistThighMinRotation = -45, waistThighMaxRotation = 90;
 float thighLeftCalfRotation = 0, thighRightCalfRotation = 0, thighCalfMinRotation = 0, thighCalfMaxRotation = 45;
-float calfLeftLegRotation = 0, calfRightLegRotation = 0, calfLegMinRotation = -15, calfLegMaxRotation = 15;
+float calfLeftLegRotation = 0, calfRightLegRotation = 0, calfLegMinRotation = -30, calfLegMaxRotation = 30;
 
 //Lower body part translation
 float thightX = 1.75, thighY = -0.25, thighZ = 0;
@@ -158,7 +155,7 @@ bool walk = false;
 BITMAP BMP;
 HBITMAP hBMP = NULL;
 bool textureSwitch = false;
-int textureCount=0;
+int textureCount = 0;
 GLuint textureArr[5]; //0 for armmor, 1 for join part, 2 for detail, 3 for shiny part
 LPCSTR  textureName = "";
 
@@ -177,7 +174,7 @@ int  lightSwitch = 0, materialSwitch = 0;
 
 float animationSpeed = 0.01; // Speed of the walking animation
 float animationTime = 0.0;   // Keeps track of the current time in the animation
-void updateWalkingAnimation()  {
+void updateWalkingAnimation() {
 	// Update animation time
 	if (walk) {
 		animationTime += animationSpeed;
@@ -187,8 +184,8 @@ void updateWalkingAnimation()  {
 		arm_upper_right_current_angle_z = clamp(arm_upper_min_angle_z, arm_upper_min_angle_z, arm_upper_max_angle_z);
 
 		// Add slight outward/inward motion (Y-axis)
-		arm_upper_left_current_angle_y = clamp(-40 * cos(animationTime ), arm_upper_max_angle_y, arm_upper_min_angle_y);
-		arm_upper_right_current_angle_y = clamp(40 * cos(animationTime ), arm_upper_max_angle_y, arm_upper_min_angle_y);
+		arm_upper_left_current_angle_y = clamp(-40 * cos(animationTime), arm_upper_max_angle_y, arm_upper_min_angle_y);
+		arm_upper_right_current_angle_y = clamp(40 * cos(animationTime), arm_upper_max_angle_y, arm_upper_min_angle_y);
 
 		// Slight elbow bend for natural motion
 		arm_lower_left_current_angle = clamp(30 * sin(animationTime), arm_lower_max_angle, arm_lower_min_angle);
@@ -199,7 +196,7 @@ void updateWalkingAnimation()  {
 		waistRightThighRotation = clamp(-20 * sin(animationTime), waistThighMinRotation, waistThighMaxRotation);
 
 		// Calves adjust to leg motion
-		thighLeftCalfRotation = clamp(-30 * cos(animationTime ), thighCalfMinRotation, thighCalfMaxRotation);
+		thighLeftCalfRotation = clamp(-30 * cos(animationTime), thighCalfMinRotation, thighCalfMaxRotation);
 		thighRightCalfRotation = clamp(30 * cos(animationTime), thighCalfMinRotation, thighCalfMaxRotation);
 
 		// Feet adjust slightly for natural gait
@@ -207,8 +204,8 @@ void updateWalkingAnimation()  {
 		calfRightLegRotation = clamp(10 * cos(animationTime), calfLegMinRotation, calfLegMaxRotation);
 
 		// Body sway and head counter-movement
-		body_current_angle = clamp(15 * sin(animationTime ), body_min_angle, body_max_angle);
-		head_current_angle = clamp(-5 * sin(animationTime ), head_min_angle, head_max_angle);
+		body_current_angle = clamp(15 * sin(animationTime), body_min_angle, body_max_angle);
+		head_current_angle = clamp(-5 * sin(animationTime), head_min_angle, head_max_angle);
 
 	}
 	else
@@ -229,7 +226,7 @@ void updateWalkingAnimation()  {
 		waistLeftThighRotation = 0, waistRightThighRotation = 0;
 		thighLeftCalfRotation = 0, thighRightCalfRotation = 0;
 		calfLeftLegRotation = 0, calfRightLegRotation = 0;
-	
+
 	}
 }
 
@@ -266,7 +263,7 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 		if (wParam == 'W') { walk = !walk; }
 		if (wParam == 'I') { weaponSwitch = !weaponSwitch; }
 		if (wParam == 'R') {
-			textureCount++; 
+			textureCount++;
 			textureCount %= 3;
 			switch (textureCount)
 			{
@@ -283,7 +280,7 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 				textureArr[1] = textureArr[2];
 				textureArr[2] = textureArr[3];
 				textureArr[3] = textureArr[4];
-				
+
 				break;
 			case 2:
 				textureArr[4] = textureArr[0];
@@ -305,50 +302,50 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			/*if (arm_upper_current_angle_y > arm_upper_max_angle_y)
 				arm_upper_current_angle_y -= speed+5;*/
 
-			/*if (arm_upper_left_current_angle_z < arm_upper_max_angle_z)
-				arm_upper_left_current_angle_z += speed + 5;
-			if (arm_upper_right_current_angle_z < arm_upper_max_angle_z)
-				arm_upper_right_current_angle_z += speed + 5;*/
+				/*if (arm_upper_left_current_angle_z < arm_upper_max_angle_z)
+					arm_upper_left_current_angle_z += speed + 5;
+				if (arm_upper_right_current_angle_z < arm_upper_max_angle_z)
+					arm_upper_right_current_angle_z += speed + 5;*/
 
-			/*if (hand_right_current_angle > hand_max_angle)
-				hand_right_current_angle -= speed + 5;*/
-			 
-			/*if (arm_lower_current_angle > arm_lower_max_angle)
-				arm_lower_current_angle -= speed + 5;*/
+					/*if (hand_right_current_angle > hand_max_angle)
+						hand_right_current_angle -= speed + 5;*/
 
-			/*if (finger_current_angle < finger_max_angle)
-				finger_current_angle += speed + 5;*/
+						/*if (arm_lower_current_angle > arm_lower_max_angle)
+							arm_lower_current_angle -= speed + 5;*/
 
-			/*if (body_current_angle < body_max_angle)
-				body_current_angle += speed + 5;*/
+							/*if (finger_current_angle < finger_max_angle)
+								finger_current_angle += speed + 5;*/
 
-			/*if (head_current_angle < head_max_angle)
-				head_current_angle += speed + 5;*/
+								/*if (body_current_angle < body_max_angle)
+									body_current_angle += speed + 5;*/
+
+									/*if (head_current_angle < head_max_angle)
+										head_current_angle += speed + 5;*/
 		}
 		if (wParam == 'N') {
 			/*if (arm_upper_current_angle_y < arm_upper_min_angle_y)
 				arm_upper_current_angle_y += speed+5;*/
 
-			/*if (arm_upper_left_current_angle_z > arm_upper_min_angle_z)
-				arm_upper_left_current_angle_z -= speed + 5;
-			if (arm_upper_right_current_angle_z > arm_upper_min_angle_z)
-				arm_upper_right_current_angle_z -= speed + 5;*/
+				/*if (arm_upper_left_current_angle_z > arm_upper_min_angle_z)
+					arm_upper_left_current_angle_z -= speed + 5;
+				if (arm_upper_right_current_angle_z > arm_upper_min_angle_z)
+					arm_upper_right_current_angle_z -= speed + 5;*/
 
 
-			/*if (hand_right_current_angle < hand_min_angle)
-				hand_right_current_angle += speed + 5;*/
+					/*if (hand_right_current_angle < hand_min_angle)
+						hand_right_current_angle += speed + 5;*/
 
-			/*if (arm_lower_current_angle < arm_lower_min_angle)
-				arm_lower_current_angle += speed + 5;*/
+						/*if (arm_lower_current_angle < arm_lower_min_angle)
+							arm_lower_current_angle += speed + 5;*/
 
-			/*if (finger_current_angle > finger_min_angle)
-				finger_current_angle -= speed + 5;*/
+							/*if (finger_current_angle > finger_min_angle)
+								finger_current_angle -= speed + 5;*/
 
-			/*if (body_current_angle > body_min_angle)
-				body_current_angle -= speed + 5;*/
+								/*if (body_current_angle > body_min_angle)
+									body_current_angle -= speed + 5;*/
 
-			/*if (head_current_angle > head_min_angle)
-				head_current_angle -= speed + 5;*/
+									/*if (head_current_angle > head_min_angle)
+										head_current_angle -= speed + 5;*/
 
 		}
 		if (wParam == VK_ESCAPE) PostQuitMessage(0);
@@ -359,8 +356,8 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 		if (wParam == VK_OEM_PLUS) { radius -= 1.0f; }
 		if (wParam == VK_OEM_MINUS) { radius += 1.0f; }
 		if (wParam == VK_SPACE) {
-			radius = 50.0f;              
-			yaw = 0.0f;                 
+			radius = 50.0f;
+			yaw = 0.0f;
 			pitch = 0.0f;
 
 		}
@@ -369,7 +366,7 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 		cameraPosition.z = target.z + radius * sin(yaw) * cos(pitch);
 		if (colorSwitch) {
 			colorR = colorG = colorB = r = g = b = 1;
-			
+
 		}
 		else
 		{
@@ -382,7 +379,6 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
-
 //--------------------------------------------------------------------
 
 bool initPixelFormat(HDC hdc)
@@ -415,9 +411,7 @@ bool initPixelFormat(HDC hdc)
 		return false;
 	}
 }
-
 //--------------------------------------------------------------------
-
 void rect(float x, float y, float z, GLenum style) {
 
 	//bottom
@@ -433,7 +427,7 @@ void rect(float x, float y, float z, GLenum style) {
 	glTexCoord2f(1.0f, 0.0f); glVertex3f(0.0, y, 0.0);
 	glTexCoord2f(1.0f, 1.0f); glVertex3f(0.0, y, z);
 	glTexCoord2f(0.0f, 1.0f); glVertex3f(0.0f, 0.0f, z);
-	
+
 	glEnd();
 	//front
 	glBegin(style);
@@ -461,7 +455,7 @@ void rect(float x, float y, float z, GLenum style) {
 	glTexCoord2f(0.0f, 0.0f); glVertex3f(x, y, 0.0f);
 	glTexCoord2f(1.0f, 0.0f); glVertex3f(0.0, y, 0.0);
 	glTexCoord2f(1.0f, 1.0f); glVertex3f(0.0f, y, z);
-	glTexCoord2f(0.0f, 1.0f); glVertex3f(x , y, z);
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(x, y, z);
 	glEnd();
 }
 
@@ -472,7 +466,6 @@ void sphere(float radius, float slice, float stack, GLenum style) {
 	gluSphere(obj, radius, slice, stack);
 	gluDeleteQuadric(obj);
 }
-
 void cylinder(float bottom, float top, float height, int slice, int stack, GLenum style) {
 	obj = gluNewQuadric();
 	gluQuadricDrawStyle(obj, style);
@@ -521,10 +514,10 @@ void drawSphereWithoutGLU(GLfloat radius = 0.35, int sliceNo = 30, int stackNo =
 	}
 }
 
-//Sphere with customizable radius in 3 axes
-void drawSphereWithoutGLUAdvanced(GLfloat xRadius, GLfloat yRadius, GLfloat zRadius, int sliceNo, int stackNo)
+void drawSphereWithoutGLUAdvanced(GLfloat xRadius = 0.35, GLfloat yRadius = 0.35, GLfloat zRadius = 0.35, int sliceNo = 30, int stackNo = 30)
 {
-	GLfloat x, y, z, u, v, sliceA, stackA;
+	GLfloat x, y, z, sliceA, stackA;
+	GLfloat u, v;
 
 	for (sliceA = 0.0; sliceA < 2 * PI; sliceA += PI / sliceNo)
 	{
@@ -534,21 +527,16 @@ void drawSphereWithoutGLUAdvanced(GLfloat xRadius, GLfloat yRadius, GLfloat zRad
 			x = xRadius * cos(stackA) * sin(sliceA);
 			y = yRadius * sin(stackA) * sin(sliceA);
 			z = zRadius * cos(sliceA);
-
-			u = sliceA / (2 * PI);         // u: Longitude as a fraction of 2*PI
-			v = stackA / PI;              // v: Latitude as a fraction of PI
-
-			glTexCoord2f(u, v);			// Assign texture coordinate
+			u = stackA / (2 * PI); // Map longitude to [0, 1]
+			v = sliceA / (2 * PI); // Map latitude to [0, 1]
+			glTexCoord2f(u, v);
 			glVertex3f(x, y, z);
-
 			x = xRadius * cos(stackA) * sin(sliceA + PI / stackNo);
 			y = yRadius * sin(stackA) * sin(sliceA + PI / sliceNo);
 			z = zRadius * cos(sliceA + PI / sliceNo);
-
-			u = (sliceA + PI / sliceNo) / (2 * PI); // Adjust u for the next slice
-			v = stackA / PI;                        // v stays the same
-
-			glTexCoord2f(u, v);			// Assign texture coordinate
+			u = stackA / (2 * PI); // Map longitude to [0, 1]
+			v = (sliceA + PI / sliceNo) / (2 * PI); // Adjust latitude
+			glTexCoord2f(u, v);
 			glVertex3f(x, y, z);
 		}
 		glEnd();
@@ -591,13 +579,13 @@ void light() {
 	{
 		glMaterialfv(GL_FRONT, GL_DIFFUSE, difM);
 	}
-	
+
 }
 
 GLuint loadTexture(LPCSTR filename) {
 
 	GLuint texture = 0;
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 4); 
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 
 	// Load the texture file
 	HBITMAP hBMP = (HBITMAP)LoadImage(GetModuleHandle(NULL),
@@ -637,10 +625,10 @@ void Texture() {
 	if (textureSwitch) {
 		glEnable(GL_TEXTURE_2D);
 		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE); // Disable glColor3f effect
-	}	
+	}
 	else
 		glDisable(GL_TEXTURE_2D);
-	
+
 }
 
 void destory() {
@@ -653,15 +641,15 @@ void destory() {
 void camera() {
 	gluLookAt(cameraPosition.x, cameraPosition.y, cameraPosition.z,
 		target.x, target.y, target.z,
-		upVector.x,upVector.y,upVector.z);
+		upVector.x, upVector.y, upVector.z);
 }
 //--------------body start-------------------
 void cheast_frame1() {
-	
+
 	glBegin(style_gl);//frame1
-	glColor3f(r,0,0);
+	glColor3f(r, 0, 0);
 	glTexCoord2f(0.0f, 0.0f); glVertex3f(0, 0, 0);
-	glTexCoord2f(1.0f, 0.0f); glVertex3f(0,2,0.5);
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(0, 2, 0.5);
 	glTexCoord2f(1.0f, 1.0f); glVertex3f(-1.6, 3.3, -1.2);
 	glTexCoord2f(0.0f, 1.0f); glVertex3f(-1.6, 1.8, -1);
 	glEnd();
@@ -702,7 +690,7 @@ void cheast_frame1() {
 void cheast_frame2() {
 	//front
 	glBegin(style_gl);
-	glColor3f(r,0,0);
+	glColor3f(r, 0, 0);
 	glTexCoord2f(0.0f, 0.0f); glVertex3f(0, 0, 0);
 	glTexCoord2f(1.0f, 0.0f); glVertex3f(1.6, 0, 0);
 	glTexCoord2f(1.0f, 0.0f); glVertex3f(1.9, 0.4, 0);
@@ -748,7 +736,7 @@ void cheast_frame2() {
 	glTexCoord2f(0.0f, 0.0f); glVertex3f(0, 0, 0);
 	glTexCoord2f(1.0f, 0.0f); 	glVertex3f(1.6, 0, 0);
 	glTexCoord2f(1.0f, 1.0f); glVertex3f(1.2, -0.25, -1.4);
-	glTexCoord2f(0.0f, 1.0f); glVertex3f(-0.3, -0.2 , -1);
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(-0.3, -0.2, -1);
 	glEnd();
 
 	glBegin(style_gl);
@@ -768,7 +756,7 @@ void cheast_frame2() {
 	glTexCoord2f(0.0f, 1.0f); glVertex3f(-0.1, -0.4, -1.05);
 	glEnd();
 	glBegin(style_gl);
-	glColor3f(r,0,0);
+	glColor3f(r, 0, 0);
 	glTexCoord2f(0.0f, 0.0f); glVertex3f(0.2, -0.2, -0.4);
 	glTexCoord2f(1.0f, 0.0f); glVertex3f(1.48, -0.2, -0.4);
 	glTexCoord2f(1.0f, 1.0f); glVertex3f(1.48, 0, -0.4);
@@ -904,7 +892,7 @@ void cheast_frame2() {
 	//yiling
 	//font
 	glBegin(style_gl);//left
-	glColor3f(r,g,0);
+	glColor3f(r, g, 0);
 	glTexCoord2f(0.0f, 0.0f); glVertex3f(-0.5, 2.4, -1.305);
 	glTexCoord2f(1.0f, 0.0f); glVertex3f(-0.2, 3.4, -1.305);
 	glTexCoord2f(1.0f, 1.0f); glVertex3f(0.5, 3, -0.305);
@@ -951,7 +939,7 @@ void cheast_frame2() {
 	glTexCoord2f(1.0f, 1.0f); glVertex3f(-0.4, 3.1, -2);
 	glTexCoord2f(0.0f, 1.0f); glVertex3f(-0.7, 2.3, -1.9);
 	glEnd();
-	
+
 	glBegin(style_gl);//top 
 	glColor3f(r, 0, 0);
 	glTexCoord2f(0.0f, 0.0f); glVertex3f(-0.2, 3.4, -1.305);
@@ -1007,37 +995,37 @@ void cheast_frame2() {
 	glTexCoord2f(1.0f, 0.0f); glVertex3f(0.7, 2.6, -2.5);
 	glTexCoord2f(1.0f, 1.0f); glVertex3f(0.6, 2.6, -2.6);
 	glTexCoord2f(0.0f, 1.0f); glVertex3f(0.7, 1.7, -2.9);
-	
+
 	glEnd();
-	
+
 }
 
 void cheast_middle_detail() {
 	glPushMatrix();
-	glScalef(0.5,0.5,0.5);
+	glScalef(0.5, 0.5, 0.5);
 	glRotatef(180, 0, 1, 0);
 	glPushMatrix();
-	glColor3f(0,g,0);
+	glColor3f(0, g, 0);
 	glTranslatef(-1.5, 0.1, 1);
-	glRotatef(10,1,0.5,0);
-	cylinder(0.2,0.2,0.3,10,10,style_glu);
+	glRotatef(10, 1, 0.5, 0);
+	cylinder(0.2, 0.2, 0.3, 10, 10, style_glu);
 	glPushMatrix();
-	glTranslatef(0,0,0.3);
+	glTranslatef(0, 0, 0.3);
 	cylinder(0.2, 0, 0.02, 10, 10, style_glu);
 	glPopMatrix();
 	glPushMatrix();
-	glColor3f(0,0,b);
+	glColor3f(0, 0, b);
 	glTranslatef(0, 0, -0.05);
 	cylinder(0.25, 0.25, 0.05, 10, 10, style_glu);
-	disk(0,0.25,10,10,style_glu);
+	disk(0, 0.25, 10, 10, style_glu);
 	glPushMatrix();
-	glTranslatef(0,0,0.05);
+	glTranslatef(0, 0, 0.05);
 	disk(0, 0.25, 10, 10, style_glu);
 	glPopMatrix();
 	glPopMatrix();
 	glColor3f(r, g, 0);
 	glPushMatrix();
-	glTranslatef(0,-0.07,-0.6);
+	glTranslatef(0, -0.07, -0.6);
 	glRotatef(-7, 1, 0, 0);
 	cylinder(0.15, 0.15, 0.6, 10, 10, style_glu);
 	glPopMatrix();
@@ -1060,15 +1048,15 @@ void cheast_middle_detail() {
 
 void cheast_middle() {
 	glPushMatrix();
-	glScalef(1.6,1.6,1.6);
+	glScalef(1.6, 1.6, 1.6);
 
 	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
 	glPushMatrix();
-	glColor3f(r,0,0);
+	glColor3f(r, 0, 0);
 	glRotatef(180, 0, 0, 1);
 	drawSphereWithoutGLU(1, 20, 20, 3.14, 3.14);
 	glPushMatrix();
-	glRotatef(90,0,1,0);
+	glRotatef(90, 0, 1, 0);
 	drawSphereWithoutGLU(1, 20, 20, 3.14, 3.14);
 	glPushMatrix();
 	glRotatef(90, 0, 1, 0);
@@ -1083,7 +1071,7 @@ void cheast_middle() {
 
 	glPushMatrix();
 	glRotatef(-90, 1, 0, 0);
-	disk(0,1,20,20,style_glu);
+	disk(0, 1, 20, 20, style_glu);
 	glPopMatrix();
 	glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -1091,19 +1079,19 @@ void cheast_middle() {
 	glPushMatrix();
 	glColor3f(0, g, 0);
 	glTranslatef(0, 0, -0.5);
-	sphere(0.4,20,20,style_glu);
+	sphere(0.4, 20, 20, style_glu);
 	glPopMatrix();
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	// the triangle
 	glPushMatrix();
-	glColor3f(0,0,b);
-	glTranslatef(0,0,-0.4);
+	glColor3f(0, 0, b);
+	glTranslatef(0, 0, -0.4);
 	glBegin(style_gl);
 	glTexCoord2f(0.0f, 0.0f); glVertex3f(0, 0.05, -1);
 	glTexCoord2f(1.0f, 0.0f); glVertex3f(0, 0.05, 0);
-	glTexCoord2f(1.0f, 1.0f); glVertex3f(0, -1.3,0 );
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(0, -1.3, 0);
 	glEnd();
 
 	glBegin(style_gl);//right front
@@ -1217,12 +1205,12 @@ void body_back() {
 	glPushMatrix();
 	glRotatef(20, 0, 1, 0);
 	glColor3f(r, g, b);
-	rect(0.8,1.8,0.2,style_gl);
+	rect(0.8, 1.8, 0.2, style_gl);
 	glPopMatrix();
-	
+
 	glPushMatrix();
-	glTranslatef(0.3,0.4,-0.28);
-	glColor3f(r,0,0);
+	glTranslatef(0.3, 0.4, -0.28);
+	glColor3f(r, 0, 0);
 	//pice1
 	glBegin(style_gl);//back
 	glTexCoord2f(0.0f, 0.0f); glVertex3f(-0.1, 0.2, 0);
@@ -1326,7 +1314,7 @@ void body_back() {
 	//pice3
 	glPushMatrix();
 	glColor3f(r, g, 0);
-	glTranslatef(0,0.3,0);
+	glTranslatef(0, 0.3, 0);
 	glBegin(style_gl);//back
 	glTexCoord2f(0.0f, 0.0f); glVertex3f(0, 0, 0);
 	glTexCoord2f(1.0f, 0.0f); glVertex3f(-0.3, -0.05, 0);
@@ -1401,10 +1389,10 @@ void body_back() {
 	glRotatef(45, 1, 0, 0);
 	glTranslatef(0, -0.7, -0.9);
 	glColor3f(0, 0, 0);
-	rect(0.5,0.5,0.2,style_gl);
+	rect(0.5, 0.5, 0.2, style_gl);
 	//pice4
 	glPushMatrix();
-	glScalef(1.2,1.2,1);
+	glScalef(1.2, 1.2, 1);
 	glTranslatef(0, -0.1, 0);
 	glRotatef(15, 0, 1, 0);
 	glColor3f(r, 0, b);//front
@@ -1494,9 +1482,9 @@ void arm_upper(bool left) {
 	glPushMatrix();//connection part
 	glColor3f(r, 0, 0);
 	glTranslatef(1.8, -0.4, -0.5);
-	rect(0.8,0.8,1,style_gl);
+	rect(0.8, 0.8, 1, style_gl);
 	glBindTexture(GL_TEXTURE_2D, 0);
-	
+
 	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	glPushMatrix();
 	glColor3f(r, g, 0);
@@ -1515,7 +1503,7 @@ void arm_upper(bool left) {
 	glColor3f(0, g, 0);
 	glTranslatef(1.4, 0.9, 0.5);
 	glRotatef(90, 1, 0, 0);
-	cylinder(0.1,0.1,1,10, 10, style_glu);
+	cylinder(0.1, 0.1, 1, 10, 10, style_glu);
 	glPopMatrix();
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glPopMatrix();//connection
@@ -1527,7 +1515,7 @@ void arm_lower(bool left) {
 	glColor3f(r, g, b);
 	glTranslatef(3, 0, 0);
 
-	
+
 	if (left) {
 		glRotatef(arm_lower_left_current_angle, 0, 1, 0);
 	}
@@ -1544,11 +1532,11 @@ void arm_lower(bool left) {
 
 	glBindTexture(GL_TEXTURE_2D, textureArr[2]);
 	glPushMatrix();
-	glTranslatef(2.3,-0.5,-0.5);
-	rect(0.5,1,1,style_gl);
+	glTranslatef(2.3, -0.5, -0.5);
+	rect(0.5, 1, 1, style_gl);
 
 	glPushMatrix();
-	glTranslatef(0.1,1,0.35);
+	glTranslatef(0.1, 1, 0.35);
 	glColor3f(r, 0, 0);
 	rect(0.3, 0.5, 0.3, style_gl);
 	glPopMatrix();
@@ -1557,19 +1545,19 @@ void arm_lower(bool left) {
 	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	glPushMatrix();
 	glColor3f(0, 0, b);
-	glTranslatef(-2,1.5,-0.5);
+	glTranslatef(-2, 1.5, -0.5);
 	rect(4, 0.3, 2, style_gl);
 	glPopMatrix();
 	glPopMatrix();
 
 	glPushMatrix();
-	glColor3f(0,g,0);
-	glTranslatef(0.3,0,-0.7);
-	glRotatef(45,1,0,0);
-	rect(2,1,1,style_gl);
+	glColor3f(0, g, 0);
+	glTranslatef(0.3, 0, -0.7);
+	glRotatef(45, 1, 0, 0);
+	rect(2, 1, 1, style_gl);
 	glPopMatrix();
 	glBindTexture(GL_TEXTURE_2D, 0);
-	
+
 }
 
 void finger1() {
@@ -1589,7 +1577,7 @@ void finger1() {
 	glPopMatrix();
 	glBindTexture(GL_TEXTURE_2D, 0);
 
-	
+
 	// First section of the finger
 	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	glPushMatrix();
@@ -1720,14 +1708,14 @@ void finger2() {
 
 void hand() {
 	glPushMatrix();
-	glTranslatef(-5.2,0,0);
+	glTranslatef(-5.2, 0, 0);
 	glBindTexture(GL_TEXTURE_2D, textureArr[2]);
 	glPushMatrix();
 	glColor3f(r, 0, b);
 	glTranslatef(8.2, 0.1, -0.5);
 	rect(1, 0.3, 1, style_gl);
 	glPopMatrix();
-	
+
 
 	glPushMatrix();
 	glTranslatef(8.2, -0.1, -0.5);
@@ -1739,14 +1727,14 @@ void hand() {
 	glPushMatrix();
 	glColor3f(0, g, 0);
 	glTranslatef(8.2, 0.4, -0.5);
-	glRotatef(-5,0,0,1);
+	glRotatef(-5, 0, 0, 1);
 	rect(1.4, 0.1, 1, style_gl);
 	glPopMatrix();
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glPushMatrix();
 	glTranslatef(8.3, -0.1, 0.6);
-	glRotatef(40,0,0,-1);
+	glRotatef(40, 0, 0, -1);
 	finger1();
 	glPopMatrix();
 
@@ -1807,7 +1795,7 @@ void arm(bool left) {
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	arm_upper(left);
-	
+
 	arm_lower(left);
 
 	glPushMatrix();
@@ -1822,7 +1810,7 @@ void arm(bool left) {
 			glTranslatef(3.4, -0.2, 2);
 			glRotatef(90, 1, 0, 0);
 			glScalef(5, 5, 5);
-			
+
 			weapon();
 
 			glPopMatrix();
@@ -1831,7 +1819,7 @@ void arm(bool left) {
 		}
 	}
 	hand();
-	
+
 	glPopMatrix(); //hand
 
 	glPopMatrix(); //lower arm
@@ -1846,11 +1834,11 @@ void body() {
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glPushMatrix();
-	glRotatef(body_current_angle,0,1,0);
+	glRotatef(body_current_angle, 0, 1, 0);
 
 	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	cheast();
-	
+
 
 	glPushMatrix();
 	glScalef(-1, 1, 1);
@@ -1869,7 +1857,7 @@ void body() {
 	glPushMatrix();
 	glScalef(1.5, 1.5, 1.5);
 	glPushMatrix();
-	glTranslatef(-0.7,1.2,-1.2);
+	glTranslatef(-0.7, 1.2, -1.2);
 	body_back();
 	glPopMatrix();
 	glPushMatrix();
@@ -1881,7 +1869,7 @@ void body() {
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glPushMatrix();
-	glTranslatef(2.2,3.5,-0.5);
+	glTranslatef(2.2, 3.5, -0.5);
 	arm(true);
 	glPopMatrix();
 	glPushMatrix();
@@ -1889,7 +1877,7 @@ void body() {
 	glTranslatef(2.2, 3.5, -0.5);
 	arm(false);
 	glPopMatrix();
-	
+
 	glPopMatrix();
 }
 //-------------body end-----------------------
@@ -2094,9 +2082,9 @@ void drawSphere(float radius)
 	gluDeleteQuadric(sphere);
 }
 
-void fourPointIrregularShape(fourIrregularPoint point, bool fill = true, bool oriColor = true, 
+void fourPointIrregularShape(fourIrregularPoint point, bool fill = true, bool oriColor = true,
 	color fC = { 0.9,0.9,0.9 }, color rC = { 0.9,0.9,0.9 }, color boC = { 0.9,0.9,0.9 },
-	color lC = { 0.9,0.9,0.9 }, color uC = { 0.9,0.9,0.9 }, color baC = { 0.9,0.9,0.9 } )
+	color lC = { 0.9,0.9,0.9 }, color uC = { 0.9,0.9,0.9 }, color baC = { 0.9,0.9,0.9 })
 {
 	if (fill)
 	{
@@ -2146,8 +2134,8 @@ void fourPointIrregularShape(fourIrregularPoint point, bool fill = true, bool or
 			glVertex3f(point.bld.x, point.bld.y, point.bld.z);
 			glVertex3f(point.blu.x, point.blu.y, point.blu.z);
 		}
-		
-		else if (!oriColor )
+
+		else if (!oriColor)
 		{
 			//front
 			glColor3f(fC.r, fC.g, fC.b);
@@ -2859,25 +2847,25 @@ void weapon()
 	glRotatef(-90, 0.0, 1.0, 0.0);
 	glRotatef(-45, 1.0, 0.0, 0.0);
 
-	
+
 
 	glColor3f(lime.r, lime.g, lime.b);		//lime
 	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
 	drawSphere(0.075);
 	glBindTexture(GL_TEXTURE_2D, 0);
-	
+
 	glColor3f(darkPurple.r, darkPurple.g, darkPurple.b);		//dark pruple
 	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	drawCylinder(0.05, 0.1, 0.3);
 	glBindTexture(GL_TEXTURE_2D, 0);
-	
+
 
 	glPushMatrix();
 
 	glTranslatef(0.0, 0.0, 0.3);
 	glRotatef(-56.25, 1.0, 0.0, 0.0);
 
-	
+
 	glColor3f(lime.r, lime.g, lime.b);		//lime
 	glBindTexture(GL_TEXTURE_2D, textureArr[1]);
 	drawSphere(0.1);
@@ -3339,20 +3327,6 @@ void lowerBodyWaist()
 	}
 	glPopMatrix();
 
-	//Front plate - tiny prism
-	glPushMatrix();
-	glTranslatef(0, 0, 0.1);
-	glRotatef(90, 1, 0, 0);
-	for (int i = 0; i < 3; i++)
-	{
-		glPushMatrix();
-		glRotatef(i * 120, 0, 1, 0);
-		glTranslatef(0, 0, 0.75);
-		polygonPlate(3, side1Prism, side2Prism);
-		glPopMatrix();
-	}
-	glPopMatrix();
-
 	glPopMatrix();
 
 
@@ -3386,7 +3360,7 @@ void lowerBodyWaist()
 	glTranslatef(-1.1, 0, 0);
 	glBindTexture(GL_TEXTURE_2D, textureArr[0]);
 	polygonPlate(6, backPlateFrontHexagon, backPlateBackHexagon);
-	
+
 	glPopMatrix();
 
 	//Right upper plate - polygon
@@ -3418,23 +3392,6 @@ void lowerBodyWaist()
 		glBindTexture(GL_TEXTURE_2D, textureArr[2]);
 		polygonPlate(3, side1Prism, side2Prism);
 		glBindTexture(GL_TEXTURE_2D, 0);
-		glPopMatrix();
-	}
-	glPopMatrix();
-
-
-
-	//Back plate - tiny prism
-	glPushMatrix();
-	glTranslatef(0, 0, -0.15);
-	glRotatef(90, 0, 0, 1);
-	glRotatef(-90, 1, 0, 0);
-	for (int i = 1; i <= 4; i++)
-	{
-		glPushMatrix();
-		glRotatef(45 + i * 90, 0, 1, 0);
-		glTranslatef(1.5, 0, 0);
-		polygonPlate(3, side1Prism, side2Prism);
 		glPopMatrix();
 	}
 	glPopMatrix();
@@ -3640,21 +3597,6 @@ void lowerBodyCalf()
 
 	glPopMatrix();
 
-	glPushMatrix();
-	glRotatef(90, 0, 1, 0);
-	for (int i = 0; i < 4; i++)
-	{
-		glPushMatrix();
-		glRotatef(i * 90, 0, 1, 0);
-		glTranslatef(-1, -0.5, 0);
-		glScalef(0.25, 1, 1);
-		polygonPlate(3, frontUpperSide1Leg, frontUpperSide2Leg);
-		glPopMatrix();
-	}
-	glPopMatrix();
-
-	glPopMatrix();
-
 	glPopMatrix();
 
 	glPopMatrix();
@@ -3774,20 +3716,20 @@ void display()
 	light();
 
 	projection();
-	
+
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 
 	glPushMatrix();
 	camera();
-	
+
 	updateWalkingAnimation();
 
 	Texture();
 
 
-	glPushMatrix();	
-	glTranslatef(0,7.5,0);
+	glPushMatrix();
+	glTranslatef(0, 7.5, 0);
 	glRotatef(180, 0, 1, 0);
 	glScalef(3, 3, 3);
 	head();
@@ -3796,7 +3738,7 @@ void display()
 	body();
 
 	glPushMatrix();
-	glTranslatef(0,-2,0);
+	glTranslatef(0, -2, 0);
 	lowerBody();
 	glPopMatrix();
 
