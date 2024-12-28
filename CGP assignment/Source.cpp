@@ -32,7 +32,7 @@ struct fourIrregularPoint
 };
 float rx = 0.0, ry = 0.0, rz = 0.0, rs = 1.0;
 
-bool weaponSwitch = false, styleSwitch = true;
+bool weaponSwitch = true, styleSwitch = true;
 
 
 //---------------------------------------------------------------
@@ -138,6 +138,10 @@ float clamp(float value, float min, float max) {
 	return value;
 }
 
+float lerp(float start, float end, float t) {
+	return start + t * (end - start);
+}
+
 //Rotation for lower body animation
 float waistLeftThighRotation = 0, waistRightThighRotation = 0, waistThighMinRotation = -45, waistThighMaxRotation = 90;
 float thighLeftCalfRotation = 0, thighRightCalfRotation = 0, thighCalfMinRotation = 0, thighCalfMaxRotation = 45;
@@ -178,6 +182,7 @@ float rotationStep = 5.0;
 int parts=0;
 float animationSpeed = 0.01; // Speed of the walking animation
 float animationTime = 0.0;   // Keeps track of the current time in the animation
+
 void updateWalkingAnimation() {
 	// Update animation time
 	if (walk) {
@@ -237,6 +242,124 @@ void updateWalkingAnimation() {
 	}
 }
 
+bool attack = false;
+float attackAnimationSpeed = 0.01;
+float attackTime = 0.0f;
+
+// Reset the attack animation when no weapon is equipped
+void resetAttackAnimation() {
+	attack = false;            // Stop the attack
+	attackTime = 0.0f;         // Reset animation time
+
+	// Ensure angles return to neutral
+	arm_upper_right_current_angle_x = 0.0f;
+	arm_upper_right_current_angle_y = 0.0f;
+	arm_upper_right_current_angle_z = -90.0f;
+	arm_lower_right_current_angle = 0.0f;
+	body_current_angle = 0.0f;
+}
+
+void attackAnimation() {
+	if (!weaponSwitch)
+	{
+		resetAttackAnimation();
+		return;
+	}
+
+	attackTime += attackAnimationSpeed;
+
+	float t = attackTime / 3.0f;
+
+	// Phase 1: Wind-up (0.0 <= t < 0.45)
+	if (t < 0.45f) {
+		float phaseT = t / 0.45f; // Normalize time for this phase (0 to 1)
+		arm_upper_right_current_angle_x = lerp(0.0f, -15.0f, phaseT);
+		arm_upper_right_current_angle_y = lerp(0.0f, -60.0f, phaseT);
+		arm_upper_right_current_angle_z = lerp(-90.0f, -15.0f, phaseT);
+		arm_lower_right_current_angle = lerp(0.0f, -60.0f, phaseT);
+		body_current_angle = lerp(0.0f, 30.0f, phaseT);
+	}
+	// Phase 2: Swing (0.45 <= t < 0.55)
+	else if (t < 0.55f) {
+		float phaseT = (t - 0.45f) / 0.10f; // Normalize time for this phase
+		arm_upper_right_current_angle_x = lerp(-15.0f, 30.0f, phaseT);      // Arm moves downward and forward
+		arm_upper_right_current_angle_y = lerp(-60.0f, 75.0f, phaseT);     // Arm swings outward to the right
+		arm_upper_right_current_angle_z = lerp(-15.0f, -90.0f, phaseT);
+		arm_lower_right_current_angle = lerp(-60.0f, 0.0f, phaseT);       // Elbow straightens slightly
+		body_current_angle = lerp(30.0f, -15.0f, phaseT);                   // Body twists back slightly
+	}
+	// Phase 3: Follow-through (0.55 <= t <= 1.0)
+	else if (t <= 1.0f) {
+		float phaseT = (t - 0.55f) / 0.45f; // Normalize time for this phase
+		arm_upper_right_current_angle_x = lerp(30.0f, 0.0f, phaseT);       // Arm returns to neutral
+		arm_upper_right_current_angle_y = lerp(75.0f, 0.0f, phaseT);       // Arm moves inward to neutral
+		arm_lower_right_current_angle = lerp(0.0f, 0.0f, phaseT);         // Elbow returns to neutral
+		body_current_angle = lerp(-15.0f, 0.0f, phaseT);                    // Body untwists
+	}
+	// End animation
+	else {
+		resetAttackAnimation();
+	}
+}
+
+
+
+//bool rotateWeapon = false;
+//
+//// Variables for weapon rotation and arm movement
+//bool isWeaponRotating = false;
+//bool isArmMoving = false;
+//const float rotateWeaponAnimationSpeed = 1080.0f; // Degrees per second for rotation speed
+//float targetWeaponRotationAngle = 0.0f; // Target rotation angle for the weapon
+//float currentWeaponRotationAngle = 0.0f; // Current rotation angle of the weapon
+//
+//float weapon_rotation_angle_x = 0.0f; // Rotation angle of the weapon on X-axis
+//float weapon_translation_x = 0.0f;    // Position of the weapon on the X-axis (translation)
+//float weapon_scale_y = 1.0f;          // Scale of the weapon on the Y-axis
+//float weapon_scale_z = 1.0f;          // Scale of the weapon on the Z-axis
+//
+//// Function to update both weapon rotation and arm movement
+//void updateRobotAnimation() {
+//	static float t = 0.0f; // Time for arm movement (lerp)
+//	static float timeElapsed = 0.0f; // Internal timer for smooth rotation
+//
+//	// Update time for smooth transition (for lerp)
+//	timeElapsed += 1.0f / 60.0f; // Assume 60 FPS or adjust accordingly
+//
+//	// -- Update arm movement --
+//	if (isArmMoving) {
+//		arm_upper_right_current_angle_x = lerp(0.0f, -90.0f, timeElapsed);
+//		arm_upper_right_current_angle_y = lerp(0.0f, -90.0f, timeElapsed);
+//		arm_upper_right_current_angle_z = lerp(-90.0f, 0.0f, timeElapsed);
+//		hand_right_current_angle = lerp(0.0f, 90.0f, timeElapsed);
+//		finger_current_angle = lerp(45.0f, 0.0f, timeElapsed);
+//		weapon_translation_x = lerp(0.0f, 2.0f, timeElapsed);
+//		weapon_scale_y = lerp(1.0f, 1.5f, timeElapsed);
+//		weapon_scale_z = lerp(1.0f, 1.5f, timeElapsed);
+//	}
+//
+//	// -- Update weapon rotation --
+//	if (isWeaponRotating) {
+//		// Rotate the weapon by rotateWeaponAnimationSpeed degrees per second
+//		float rotationChange = rotateWeaponAnimationSpeed * (1.0f / 60.0f); // Rotate per frame (assuming 60 FPS)
+//		currentWeaponRotationAngle = fmod(currentWeaponRotationAngle + rotationChange, 360.0f); // Keep the angle within 0-360 degrees
+//	}
+//	else {
+//		// Smoothly revert weapon rotation to 0 when not rotating
+//		currentWeaponRotationAngle = lerp(currentWeaponRotationAngle, 0.0f, (1.0f / 60.0f)); // Assuming 60 FPS
+//	}
+//
+//	// -- If arm movement is done, transition to the next state --
+//	if (timeElapsed >= 1.0f) {
+//		isArmMoving = false;  // Stop arm movement
+//		timeElapsed = 0.0f; // Reset time for next animation cycle
+//	}
+//}
+
+
+
+
+
 LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	switch (msg)
@@ -283,6 +406,8 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 		}
 		if (wParam == 'J') { walk = !walk; }
 		if (wParam == 'I') { weaponSwitch = !weaponSwitch; }
+		if (wParam == 'Z') { attack = true; }
+		//if (wParam == 'X') { rotateWeapon = !rotateWeapon; }
 		if (wParam == 'Y') {
 			textureCount++;
 			textureCount %= 3;
@@ -378,6 +503,7 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			case 15: hand_right_current_angle = clamp(hand_right_current_angle - rotationStep, hand_max_angle, hand_min_angle); break;
 			}
 		}
+
 
 		if (wParam == VK_ESCAPE) PostQuitMessage(0);
 		if (wParam == VK_UP) { pitch += speed; }
@@ -1863,11 +1989,18 @@ void arm(bool left) {
 		glRotatef(hand_right_current_angle, 1, 0, 0);
 		if (weaponSwitch) {
 			glPushMatrix();
-			glTranslatef(3.4, -0.2, 2);
+
+			//glScalef(1, weapon_scale_y, weapon_scale_z);
+			//glRotatef(weapon_rotation_angle_x, 1 ,0, 0);
+			//glTranslatef(weapon_translation_x, 0, 0);
+
+			glTranslatef(3.4, -0.2, 7.5);
 			glRotatef(90, 1, 0, 0);
 			glScalef(5, 5, 5);
 
+			glPushMatrix();
 			weapon();
+			glPopMatrix();
 
 			glPopMatrix();
 
@@ -3308,7 +3441,7 @@ void polygonPlate(int noOfSide, GLfloat frontPolygon[][3], GLfloat backPolygon[]
 
 	//Draw front
 	glBegin(polygonFaceGLStyle);
-	//glColor3f(1.0f, 0.0f, 0.0f); // Red
+	glColor3f(colorR, 0.0f, 0.0f); // Red
 	for (int i = 0; i < noOfSide; ++i) {
 		GLfloat u = (frontPolygon[i][0] - frontCentroid[0]) * 0.5f + 0.5f;  // Normalize
 		GLfloat v = (frontPolygon[i][1] - frontCentroid[1]) * 0.5f + 0.5f;  // Normalize
@@ -3319,7 +3452,7 @@ void polygonPlate(int noOfSide, GLfloat frontPolygon[][3], GLfloat backPolygon[]
 
 	// Draw back
 	glBegin(polygonFaceGLStyle);
-	//glColor3f(0.0f, 1.0f, 0.0f); // Green
+	glColor3f(0.0f, colorG, 0.0f); // Green
 	for (int i = 0; i < noOfSide; ++i) {
 		GLfloat u = (backPolygon[i][0] - backCentroid[0]) * 0.5f + 0.5f;  // Normalize
 		GLfloat v = (backPolygon[i][1] - backCentroid[1]) * 0.5f + 0.5f;  // Normalize
@@ -3330,7 +3463,7 @@ void polygonPlate(int noOfSide, GLfloat frontPolygon[][3], GLfloat backPolygon[]
 
 	// Draw sides
 	glBegin(polygonSideGLStyle);
-	//glColor3f(0.0f, 0.0f, 1.0f); // Blue
+	glColor3f(0.0f, 0, colorB); // Blue
 	for (int i = 0; i < noOfSide; ++i) {
 		int next = (i + 1) % noOfSide; // Wrap around to the first vertex
 		glTexCoord2f(1, 1);
@@ -3343,6 +3476,8 @@ void polygonPlate(int noOfSide, GLfloat frontPolygon[][3], GLfloat backPolygon[]
 		glVertex3fv(frontPolygon[next]);
 	}
 	glEnd();
+
+	glColor3f(colorR, colorB, colorG);
 }
 
 void lowerBodyWaist()
@@ -3782,7 +3917,18 @@ void display()
 	glPushMatrix();
 	camera();
 
+
 	updateWalkingAnimation();
+	if (attack)
+	{
+		attackAnimation();
+	}
+	//if (rotateWeapon) {
+	//	updateRobotAnimation();
+	//}
+
+
+
 
 	Texture();
 
@@ -3823,7 +3969,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int nCmdShow)
 	if (!RegisterClassEx(&wc)) return false;
 
 	HWND hWnd = CreateWindow(WINDOW_TITLE, WINDOW_TITLE, WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, CW_USEDEFAULT, 800, 600,
+		CW_USEDEFAULT, CW_USEDEFAULT, 600, 600,
 		NULL, NULL, wc.hInstance, NULL);
 
 	//--------------------------------
