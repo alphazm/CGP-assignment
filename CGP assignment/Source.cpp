@@ -265,15 +265,9 @@ void resetAttackAnimation() {
 }
 
 void attackAnimation() {
-	if (!weaponSwitch)
-	{
-		resetAttackAnimation();
-		return;
-	}
-
 	attackTime += attackAnimationSpeed;
 
-	float t = attackTime / 3.0f;
+	float t = attackTime / 2;
 
 	// Phase 1: Wind-up (0.0 <= t < 0.45)
 	if (t < 0.45f) {
@@ -307,63 +301,113 @@ void attackAnimation() {
 	}
 }
 
+bool rotateWeapon = false;
+
+bool isWeaponRotating = false;
+bool armMoved = false;
+float rotateWeaponAnimationSpeed = 0.05f;
+float rotateWeaponSpeed = 10.0f;
+
+float weapon_rotation_angle_x = 0.0f; // Rotation angle of the weapon on X-axis
+float weapon_translation_x = 0.0f;    // Position of the weapon on the X-axis (translation)
+float weapon_scale_y = 1.0f;          // Scale of the weapon on the Y-axis
+float weapon_scale_z = 1.0f;          // Scale of the weapon on the Z-axis
 
 
-//bool rotateWeapon = false;
-//
-//// Variables for weapon rotation and arm movement
-//bool isWeaponRotating = false;
-//bool isArmMoving = false;
-//const float rotateWeaponAnimationSpeed = 1080.0f; // Degrees per second for rotation speed
-//float targetWeaponRotationAngle = 0.0f; // Target rotation angle for the weapon
-//float currentWeaponRotationAngle = 0.0f; // Current rotation angle of the weapon
-//
-//float weapon_rotation_angle_x = 0.0f; // Rotation angle of the weapon on X-axis
-//float weapon_translation_x = 0.0f;    // Position of the weapon on the X-axis (translation)
-//float weapon_scale_y = 1.0f;          // Scale of the weapon on the Y-axis
-//float weapon_scale_z = 1.0f;          // Scale of the weapon on the Z-axis
-//
-//// Function to update both weapon rotation and arm movement
-//void updateRobotAnimation() {
-//	static float t = 0.0f; // Time for arm movement (lerp)
-//	static float timeElapsed = 0.0f; // Internal timer for smooth rotation
-//
-//	// Update time for smooth transition (for lerp)
-//	timeElapsed += 1.0f / 60.0f; // Assume 60 FPS or adjust accordingly
-//
-//	// -- Update arm movement --
-//	if (isArmMoving) {
-//		arm_upper_right_current_angle_x = lerp(0.0f, -90.0f, timeElapsed);
-//		arm_upper_right_current_angle_y = lerp(0.0f, -90.0f, timeElapsed);
-//		arm_upper_right_current_angle_z = lerp(-90.0f, 0.0f, timeElapsed);
-//		hand_right_current_angle = lerp(0.0f, 90.0f, timeElapsed);
-//		finger_current_angle = lerp(45.0f, 0.0f, timeElapsed);
-//		weapon_translation_x = lerp(0.0f, 2.0f, timeElapsed);
-//		weapon_scale_y = lerp(1.0f, 1.5f, timeElapsed);
-//		weapon_scale_z = lerp(1.0f, 1.5f, timeElapsed);
-//	}
-//
-//	// -- Update weapon rotation --
-//	if (isWeaponRotating) {
-//		// Rotate the weapon by rotateWeaponAnimationSpeed degrees per second
-//		float rotationChange = rotateWeaponAnimationSpeed * (1.0f / 60.0f); // Rotate per frame (assuming 60 FPS)
-//		currentWeaponRotationAngle = fmod(currentWeaponRotationAngle + rotationChange, 360.0f); // Keep the angle within 0-360 degrees
-//	}
-//	else {
-//		// Smoothly revert weapon rotation to 0 when not rotating
-//		currentWeaponRotationAngle = lerp(currentWeaponRotationAngle, 0.0f, (1.0f / 60.0f)); // Assuming 60 FPS
-//	}
-//
-//	// -- If arm movement is done, transition to the next state --
-//	if (timeElapsed >= 1.0f) {
-//		isArmMoving = false;  // Stop arm movement
-//		timeElapsed = 0.0f; // Reset time for next animation cycle
-//	}
-//}
+void resetRotateWeaponAnimation() {
+	rotateWeapon = false;
 
+	arm_upper_right_current_angle_x = 0.0f;
+	arm_upper_right_current_angle_y = 0.0f;
+	arm_upper_right_current_angle_z = -90.0f;
+	hand_right_current_angle = 0.0f;
+	finger_current_angle = 45.0f;
+	weapon_translation_x = 0.0f;
+	weapon_scale_y = 1.0f;
+	weapon_scale_z = 1.0f;
 
+	armMoved = false;
+}
 
+void rotateWeaponAnimation() {
+	if (!armMoved) {
+		// Move arm into position first
+		arm_upper_right_current_angle_x = lerp(arm_upper_right_current_angle_x, -90.0f, rotateWeaponAnimationSpeed);
+		arm_upper_right_current_angle_y = lerp(arm_upper_right_current_angle_y, -90.0f, rotateWeaponAnimationSpeed);
+		arm_upper_right_current_angle_z = lerp(arm_upper_right_current_angle_z, 0.0f, rotateWeaponAnimationSpeed);
+		hand_right_current_angle = lerp(hand_right_current_angle, 90.0f, rotateWeaponAnimationSpeed);
+		finger_current_angle = lerp(finger_current_angle, 0.0f, rotateWeaponAnimationSpeed);
+		weapon_translation_x = lerp(weapon_translation_x, 3.0f, rotateWeaponAnimationSpeed);
+		weapon_scale_y = lerp(weapon_scale_y, 1.5f, rotateWeaponAnimationSpeed);
+		weapon_scale_z = lerp(weapon_scale_z, 1.5f, rotateWeaponAnimationSpeed);
 
+		// Check if arm is in position
+		if (fabs(arm_upper_right_current_angle_x + 90.0f) < 5.0f &&
+			fabs(arm_upper_right_current_angle_y + 90.0f) < 5.0f &&
+			fabs(arm_upper_right_current_angle_z) < 5.0f &&
+			fabs(hand_right_current_angle - 90.0f) < 5.0f &&
+			fabs(finger_current_angle) < 5.0f &&
+			fabs(weapon_translation_x - 3.0f) < 5.0f &&
+			fabs(weapon_scale_y - 1.5f) < 5.0f &&
+			fabs(weapon_scale_z - 1.5f) < 5.0f) {
+			armMoved = true;
+		}
+	}
+	else if (!isWeaponRotating) {
+		// Start rotating weapon after arm is ready
+		isWeaponRotating = true;
+	}
+
+	if (armMoved) {
+		arm_upper_right_current_angle_x = -90.0f;
+		arm_upper_right_current_angle_y = -90.0f;
+		arm_upper_right_current_angle_z = 0.0f;
+		hand_right_current_angle = 90.0f;
+		finger_current_angle = 0.0f;
+		weapon_translation_x = 2.0f;
+		weapon_scale_y = 1.5f;
+		weapon_scale_z = 1.5f;
+	}
+
+	if (isWeaponRotating) {
+		// Continuous rotation
+		weapon_rotation_angle_x = fmod(weapon_rotation_angle_x + rotateWeaponSpeed, 360.0f);
+	}
+}
+
+void stopRotateWeaponAnimation() {
+	if (isWeaponRotating) {
+		// Stop weapon rotation first
+		weapon_rotation_angle_x = lerp(weapon_rotation_angle_x, 0.0f, rotateWeaponAnimationSpeed);
+
+		if (fabs(weapon_rotation_angle_x) < 0.1f) {
+			isWeaponRotating = false;
+		}
+	}
+	else {
+		// Return arm and weapon to neutral after weapon stops
+		arm_upper_right_current_angle_x = lerp(arm_upper_right_current_angle_x, 0.0f, rotateWeaponAnimationSpeed);
+		arm_upper_right_current_angle_y = lerp(arm_upper_right_current_angle_y, 0.0f, rotateWeaponAnimationSpeed);
+		arm_upper_right_current_angle_z = lerp(arm_upper_right_current_angle_z, -90.0f, rotateWeaponAnimationSpeed);
+		hand_right_current_angle = lerp(hand_right_current_angle, 0.0f, rotateWeaponAnimationSpeed);
+		finger_current_angle = lerp(finger_current_angle, 45.0f, rotateWeaponAnimationSpeed);
+		weapon_translation_x = lerp(weapon_translation_x, 0.0f, rotateWeaponAnimationSpeed);
+		weapon_scale_y = lerp(weapon_scale_y, 1.0f, rotateWeaponAnimationSpeed);
+		weapon_scale_z = lerp(weapon_scale_z, 1.0f, rotateWeaponAnimationSpeed);
+
+		// Stop animation once everything returns to neutral
+		if (fabs(arm_upper_right_current_angle_x) < 5.0f &&
+			fabs(arm_upper_right_current_angle_y) < 5.0f &&
+			fabs(arm_upper_right_current_angle_z + 90.0f) < 5.0f &&
+			fabs(hand_right_current_angle) < 5.0f &&
+			fabs(finger_current_angle - 45.0f) < 5.0f &&
+			fabs(weapon_translation_x) < 5.0f &&
+			fabs(weapon_scale_y - 1.0f) < 5.0f &&
+			fabs(weapon_scale_z - 1.0f) < 5.0f) {
+			resetRotateWeaponAnimation();
+		}
+	}
+}
 
 LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -412,7 +456,7 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 		if (wParam == 'J') { walk = !walk; }
 		if (wParam == 'I') { weaponSwitch = !weaponSwitch; }
 		if (wParam == 'Z') { attack = true; }
-		//if (wParam == 'X') { rotateWeapon = !rotateWeapon; }
+		if (wParam == 'X') { rotateWeapon = !rotateWeapon; }
 		if (wParam == 'Y') {
 			textureCount++;
 			textureCount %= 3;
@@ -2057,9 +2101,9 @@ void arm(bool left) {
 		if (weaponSwitch) {
 			glPushMatrix();
 
-			//glScalef(1, weapon_scale_y, weapon_scale_z);
-			//glRotatef(weapon_rotation_angle_x, 1 ,0, 0);
-			//glTranslatef(weapon_translation_x, 0, 0);
+			glScalef(1, weapon_scale_y, weapon_scale_z);
+			glRotatef(weapon_rotation_angle_x, 1 ,0, 0);
+			glTranslatef(weapon_translation_x, 0, 0);
 
 			glTranslatef(3.4, -0.2, 7.5);
 			glRotatef(90, 1, 0, 0);
@@ -2070,8 +2114,7 @@ void arm(bool left) {
 			glPopMatrix();
 
 			glPopMatrix();
-
-			finger_current_angle = finger_max_angle;
+			//finger_current_angle = finger_max_angle;
 		}
 	}
 	hand();
@@ -3984,17 +4027,25 @@ void display()
 	glPushMatrix();
 	camera();
 
-
-
-
 	updateWalkingAnimation();
-	if (attack)
-	{
-		attackAnimation();
+
+	if (weaponSwitch) {
+		if (attack && !armMoved) {
+			attackAnimation();
+		}
+		else if (rotateWeapon && !attack && !walk) {
+			rotateWeaponAnimation();
+		}
+		else {
+			if (armMoved) {
+				stopRotateWeaponAnimation();
+			}
+		}
 	}
-	//if (rotateWeapon) {
-	//	updateRobotAnimation();
-	//}
+	else {
+		resetAttackAnimation();
+		resetRotateWeaponAnimation();
+	}
 
 	Texture();
 
