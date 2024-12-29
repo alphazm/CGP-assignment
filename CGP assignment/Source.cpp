@@ -96,7 +96,7 @@ float Oner = -100, Ofar = 100, Pner = 0.1, Pfar = 200;
 bool ortho = false;
 
 //lighting
-bool lightSwitch = false, useAmbient = true, useSpotlight= false;
+bool lightSwitch = false, useAmbient = true, useSpotlight = false;
 float moveStep = 0.5f;
 float spotPosition[] = { 0.0f, 5.0f, 5.0f, 1.0f }; // Position of the spotlight
 float spotDirection[] = { 0.0f, -1.0f, -1.0f };    // Direction of the spotlight
@@ -184,7 +184,7 @@ GLUquadricObj* obj = NULL;
 //Audio *audio;
 
 float rotationStep = 5.0;
-int parts=0;
+int parts = 0;
 float animationSpeed = 0.01; // Speed of the walking animation
 float animationTime = 0.0;   // Keeps track of the current time in the animation
 
@@ -192,7 +192,7 @@ void updateWalkingAnimation() {
 	// Update animation time
 	if (walk) {
 		animationTime += animationSpeed;
-		if(tz < Pfar/2)
+		if (tz < Pfar / 2)
 			tz += animationSpeed * 0.5;
 		// Arms stay slightly outward from the body (Z-axis)
 		arm_upper_left_current_angle_z = clamp(arm_upper_min_angle_z, arm_upper_min_angle_z, arm_upper_max_angle_z);
@@ -215,8 +215,8 @@ void updateWalkingAnimation() {
 		thighRightCalfRotation = clamp(30 * cos(animationTime), thighCalfMinRotation, thighCalfMaxRotation);
 
 		// Feet adjust slightly for natural gait
-		calfLeftLegRotation = clamp(-5  * sin(animationTime), calfLegMinRotation, calfLegMaxRotation);
-		calfRightLegRotation = clamp(5  * sin(animationTime), calfLegMinRotation, calfLegMaxRotation);
+		calfLeftLegRotation = clamp(-5 * sin(animationTime), calfLegMinRotation, calfLegMaxRotation);
+		calfRightLegRotation = clamp(5 * sin(animationTime), calfLegMinRotation, calfLegMaxRotation);
 
 		// Body sway and head counter-movement
 		body_current_angle = clamp(15 * sin(animationTime), body_min_angle, body_max_angle);
@@ -559,15 +559,15 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 		if (wParam == VK_DOWN) { pitch -= speed; }
 		if (wParam == VK_LEFT) { yaw -= speed; }
 		if (wParam == VK_RIGHT) { yaw += speed; }
-		if (wParam == VK_OEM_PLUS) { 
+		if (wParam == VK_OEM_PLUS) {
 			if (!ortho) {
-				if (radius > Pner+1 ) 
+				if (radius > Pner + 1)
 					radius -= 1.0f;
 			}
 		}
-		if (wParam == VK_OEM_MINUS) { 
+		if (wParam == VK_OEM_MINUS) {
 			if (!ortho) {
-				if (radius < Pfar/2) 
+				if (radius < Pfar / 2)
 					radius += 1.0f;
 			}
 		}
@@ -576,19 +576,20 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 			yaw = 0.0f;
 			pitch = 0.0f;
 			tz = 0;
-			arm_upper_left_current_angle_z=0;
-			arm_upper_right_current_angle_z=0;
+			arm_upper_left_current_angle_z = 0;
+			arm_upper_right_current_angle_z = 0;
 		}
 		cameraPosition.x = target.x + radius * cos(yaw) * cos(pitch);
 		cameraPosition.y = target.y + radius * sin(pitch);
 		cameraPosition.z = target.z + radius * sin(yaw) * cos(pitch);
-		if (colorSwitch) {
-			colorR = colorG = colorB = r = g = b = 1;
-
-		}
-		else
-		{
-			colorR = colorG = colorB = r = g = b = 0;
+		if (lightSwitch) {
+			if (colorSwitch) {
+				colorR = colorG = colorB = r = g = b = 1;
+			}
+			else
+			{
+				colorR = colorG = colorB = r = g = b = 0;
+			}
 		}
 		break;
 	default:
@@ -678,7 +679,7 @@ void rect(float x, float y, float z, GLenum style) {
 }
 
 void skyBox(float x, float y, float z, GLenum style = GL_POLYGON) {
-	
+
 	//bottom
 	glBindTexture(GL_TEXTURE_2D, textureArr[6]);
 	glBegin(style);
@@ -2102,7 +2103,7 @@ void arm(bool left) {
 			glPushMatrix();
 
 			glScalef(1, weapon_scale_y, weapon_scale_z);
-			glRotatef(weapon_rotation_angle_x, 1 ,0, 0);
+			glRotatef(weapon_rotation_angle_x, 1, 0, 0);
 			glTranslatef(weapon_translation_x, 0, 0);
 
 			glTranslatef(3.4, -0.2, 7.5);
@@ -3101,6 +3102,13 @@ void corn()
 
 }
 
+void Color() {
+	if (colorSwitch)
+		glEnable(GL_COLOR_MATERIAL);
+	else
+		glDisable(GL_COLOR_MATERIAL);
+}
+
 void weapon()
 {
 	//bottom spike lower
@@ -4011,12 +4019,12 @@ void lowerBody()
 //----------------end---------------------------
 
 
-
 void display()
 {
 	glClearColor(0.498, 0.498, 0.498, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+	Color();
 	light();
 
 	projection();
@@ -4058,7 +4066,7 @@ void display()
 		glPopMatrix();
 	}
 
-	
+
 
 	glPushMatrix();//robot position
 	glTranslatef(0, 0, tz);
@@ -4122,7 +4130,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int nCmdShow)
 	glEnable(GL_DEPTH_TEST);
 
 	setUpTexture();
-	
+
 	//--------------------------------
 	//	End initialization
 	//--------------------------------
