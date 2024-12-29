@@ -3,9 +3,12 @@
 #include <gl/GL.h>
 #include <gl/GLU.h>
 #include <Math.h>
+#include "fmod.hpp"
+//#include "Audio.h"
 
 #pragma comment (lib, "OpenGL32.lib")
 #pragma comment (lib, "GLU32.lib")
+#pragma comment (lib, "fmod_vc.lib")
 
 #define WINDOW_TITLE "OpenGL Window"
 const float PI = 3.141592f, speed = 0.1;
@@ -162,7 +165,7 @@ BITMAP BMP;
 HBITMAP hBMP = NULL;
 bool textureSwitch = false;
 int textureCount = 0;
-GLuint textureArr[5]; //0 for armmor, 1 for join part, 2 for detail, 3 for shiny part
+GLuint textureArr[7]; //0 for armmor, 1 for join part, 2 for detail, 3 for shiny part
 
 //color 
 float r, g, b;
@@ -177,6 +180,8 @@ color lime = { 0.0,1.0,0.5 };
 
 GLUquadricObj* obj = NULL;
 
+//sound
+//Audio *audio;
 
 float rotationStep = 5.0;
 int parts=0;
@@ -628,6 +633,63 @@ void rect(float x, float y, float z, GLenum style) {
 	glEnd();
 }
 
+void skyBox(float x, float y, float z, GLenum style = GL_POLYGON) {
+	
+	//bottom
+	glBindTexture(GL_TEXTURE_2D, textureArr[6]);
+	glBegin(style);
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(0.0f, 0.0f, z);
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(x, 0.0f, z);
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(x, 0.0f, 0.0f);
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(0.0f, 0.0f, 0.0f);
+	glEnd();
+	glBindTexture(GL_TEXTURE_2D, 0);
+	//left
+	glBindTexture(GL_TEXTURE_2D, textureArr[5]);
+	glBegin(style);
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(0.0f, 0.0f, 0.0f);
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(0.0, y, 0.0);
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(0.0, y, z);
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(0.0f, 0.0f, z);
+	glEnd();
+	glBindTexture(GL_TEXTURE_2D, 0);
+	//front
+	glBindTexture(GL_TEXTURE_2D, textureArr[5]);
+	glBegin(style);
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(0.0f, 0.0f, z);
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(0.0f, y, z);
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(x, y, z);
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(x, 0.0f, z);
+	glEnd();
+	glBindTexture(GL_TEXTURE_2D, 0);
+	//right
+	glBindTexture(GL_TEXTURE_2D, textureArr[5]);
+	glBegin(style);
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(x, 0.0f, z);
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(x, y, z);
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(x, y, 0.0f);
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(x, 0.0f, 0.0f);
+	glEnd();
+	glBindTexture(GL_TEXTURE_2D, 0);
+	//back
+	glBindTexture(GL_TEXTURE_2D, textureArr[5]);
+	glBegin(style);
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(x, 0.0f, 0.0f);
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(0.0f, 0.0f, 0.0f);
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(0.0, y, 0.0);
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(x, y, 0.0f);
+	glEnd();
+	//top 
+	glBindTexture(GL_TEXTURE_2D, textureArr[5]);
+	glBegin(style);
+	glTexCoord2f(0.0f, 0.0f); glVertex3f(x, y, 0.0f);
+	glTexCoord2f(1.0f, 0.0f); glVertex3f(0.0, y, 0.0);
+	glTexCoord2f(1.0f, 1.0f); glVertex3f(0.0f, y, z);
+	glTexCoord2f(0.0f, 1.0f); glVertex3f(x, y, z);
+	glEnd();
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
 void sphere(float radius, float slice, float stack, GLenum style) {
 	obj = gluNewQuadric();
 	gluQuadricDrawStyle(obj, style);
@@ -801,6 +863,8 @@ void setUpTexture() {
 	textureArr[1] = loadTexture("vanila.bmp");
 	textureArr[2] = loadTexture("stawberry.bmp");
 	textureArr[3] = loadTexture("cherry.bmp");
+	textureArr[5] = loadTexture("sky1.bmp");
+	textureArr[6] = loadTexture("ground.bmp");
 }
 
 void Texture() {
@@ -818,6 +882,9 @@ void destory() {
 	glDeleteTextures(1, &textureArr[1]);
 	glDeleteTextures(1, &textureArr[2]);
 	glDeleteTextures(1, &textureArr[3]);
+	glDeleteTextures(1, &textureArr[4]);
+	glDeleteTextures(1, &textureArr[5]);
+	//delete audio;
 }
 
 void camera() {
@@ -3918,6 +3985,8 @@ void display()
 	camera();
 
 
+
+
 	updateWalkingAnimation();
 	if (attack)
 	{
@@ -3927,10 +3996,18 @@ void display()
 	//	updateRobotAnimation();
 	//}
 
-
-
-
 	Texture();
+
+	if (textureSwitch) {
+		glPushMatrix();
+		glTranslatef(-100, -16, -100);
+		glBindTexture(GL_TEXTURE_2D, textureArr[5]);
+		skyBox(200, 100, 200);
+		glBindTexture(GL_TEXTURE_2D, 0);
+		glPopMatrix();
+	}
+
+	
 
 	glPushMatrix();//robot position
 	glTranslatef(0, 0, tz);
@@ -3986,9 +4063,15 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int nCmdShow)
 
 	//	make context current
 	if (!wglMakeCurrent(hdc, hglrc)) return false;
+
+	//audio = new Audio();
+	//audio->initial();
+	//audio->loadSound();
+
 	glEnable(GL_DEPTH_TEST);
 
 	setUpTexture();
+	
 	//--------------------------------
 	//	End initialization
 	//--------------------------------
@@ -4007,7 +4090,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int nCmdShow)
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-
+		//audio->updateSound();
 		display();
 
 		SwapBuffers(hdc);
