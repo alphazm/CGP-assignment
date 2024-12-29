@@ -3,8 +3,7 @@
 #include <gl/GL.h>
 #include <gl/GLU.h>
 #include <Math.h>
-#include "fmod.hpp"
-//#include "Audio.h"
+#include "Audio.h"
 
 #pragma comment (lib, "OpenGL32.lib")
 #pragma comment (lib, "GLU32.lib")
@@ -181,7 +180,7 @@ color lime = { 0.0,1.0,0.5 };
 GLUquadricObj* obj = NULL;
 
 //sound
-//Audio *audio;
+Audio *audio;
 
 float rotationStep = 5.0;
 int parts = 0;
@@ -222,6 +221,7 @@ void updateWalkingAnimation() {
 		body_current_angle = clamp(15 * sin(animationTime), body_min_angle, body_max_angle);
 		head_current_angle = clamp(-5 * sin(animationTime), head_min_angle, head_max_angle);
 		trigger = true;
+		audio->playSound1();
 	}
 	else
 	{
@@ -243,6 +243,7 @@ void updateWalkingAnimation() {
 			thighLeftCalfRotation = 0, thighRightCalfRotation = 0;
 			calfLeftLegRotation = 0, calfRightLegRotation = 0;
 			trigger = false;
+			audio->stopMusic();
 		}
 	}
 }
@@ -255,7 +256,7 @@ float attackTime = 0.0f;
 void resetAttackAnimation() {
 	attack = false;            // Stop the attack
 	attackTime = 0.0f;         // Reset animation time
-
+	audio->stopMusic();
 	// Ensure angles return to neutral
 	arm_upper_right_current_angle_x = 0.0f;
 	arm_upper_right_current_angle_y = 0.0f;
@@ -266,7 +267,7 @@ void resetAttackAnimation() {
 
 void attackAnimation() {
 	attackTime += attackAnimationSpeed;
-
+	
 	float t = attackTime / 2;
 
 	// Phase 1: Wind-up (0.0 <= t < 0.45)
@@ -277,6 +278,7 @@ void attackAnimation() {
 		arm_upper_right_current_angle_z = lerp(-90.0f, -15.0f, phaseT);
 		arm_lower_right_current_angle = lerp(0.0f, -60.0f, phaseT);
 		body_current_angle = lerp(0.0f, 30.0f, phaseT);
+		
 	}
 	// Phase 2: Swing (0.45 <= t < 0.55)
 	else if (t < 0.55f) {
@@ -286,6 +288,7 @@ void attackAnimation() {
 		arm_upper_right_current_angle_z = lerp(-15.0f, -90.0f, phaseT);
 		arm_lower_right_current_angle = lerp(-60.0f, 0.0f, phaseT);       // Elbow straightens slightly
 		body_current_angle = lerp(30.0f, -15.0f, phaseT);                   // Body twists back slightly
+		audio->playSound2();
 	}
 	// Phase 3: Follow-through (0.55 <= t <= 1.0)
 	else if (t <= 1.0f) {
@@ -370,6 +373,7 @@ void rotateWeaponAnimation() {
 	}
 
 	if (isWeaponRotating) {
+		audio->playSound3();
 		// Continuous rotation
 		weapon_rotation_angle_x = fmod(weapon_rotation_angle_x + rotateWeaponSpeed, 360.0f);
 	}
@@ -379,7 +383,7 @@ void stopRotateWeaponAnimation() {
 	if (isWeaponRotating) {
 		// Stop weapon rotation first
 		weapon_rotation_angle_x = lerp(weapon_rotation_angle_x, 0.0f, rotateWeaponAnimationSpeed);
-
+		audio->stopMusic();
 		if (fabs(weapon_rotation_angle_x) < 0.1f) {
 			isWeaponRotating = false;
 		}
@@ -933,7 +937,7 @@ void destory() {
 	glDeleteTextures(1, &textureArr[3]);
 	glDeleteTextures(1, &textureArr[4]);
 	glDeleteTextures(1, &textureArr[5]);
-	//delete audio;
+	delete audio;
 }
 
 void camera() {
@@ -4127,9 +4131,9 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int nCmdShow)
 	//	make context current
 	if (!wglMakeCurrent(hdc, hglrc)) return false;
 
-	//audio = new Audio();
-	//audio->initial();
-	//audio->loadSound();
+	audio = new Audio();
+	audio->initial();
+	audio->loadSound();
 
 	glEnable(GL_DEPTH_TEST);
 
@@ -4153,7 +4157,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE, LPSTR, int nCmdShow)
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-		//audio->updateSound();
+		audio->updateSound();
 		display();
 
 		SwapBuffers(hdc);
