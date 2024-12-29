@@ -591,6 +591,10 @@ LRESULT WINAPI WindowProcedure(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam
 				colorR = colorG = colorB = r = g = b = 0;
 			}
 		}
+		else
+		{
+			colorR = colorG = colorB = r = g = b = 1;
+		}
 		break;
 	default:
 		break;
