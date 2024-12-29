@@ -249,7 +249,7 @@ void updateWalkingAnimation() {
 }
 
 bool attack = false;
-float attackAnimationSpeed = 0.01;
+float attackAnimationSpeed = 0.02;
 float attackTime = 0.0f;
 
 // Reset the attack animation when no weapon is equipped
@@ -309,7 +309,7 @@ bool rotateWeapon = false;
 bool isWeaponRotating = false;
 bool armMoved = false;
 float rotateWeaponAnimationSpeed = 0.05f;
-float rotateWeaponSpeed = 10.0f;
+float rotateWeaponSpeed = 15.0f;
 
 float weapon_rotation_angle_x = 0.0f; // Rotation angle of the weapon on X-axis
 float weapon_translation_x = 0.0f;    // Position of the weapon on the X-axis (translation)
@@ -340,7 +340,7 @@ void rotateWeaponAnimation() {
 		arm_upper_right_current_angle_z = lerp(arm_upper_right_current_angle_z, 0.0f, rotateWeaponAnimationSpeed);
 		hand_right_current_angle = lerp(hand_right_current_angle, 90.0f, rotateWeaponAnimationSpeed);
 		finger_current_angle = lerp(finger_current_angle, 0.0f, rotateWeaponAnimationSpeed);
-		weapon_translation_x = lerp(weapon_translation_x, 3.0f, rotateWeaponAnimationSpeed);
+		weapon_translation_x = lerp(weapon_translation_x, 5.0f, rotateWeaponAnimationSpeed);
 		weapon_scale_y = lerp(weapon_scale_y, 1.5f, rotateWeaponAnimationSpeed);
 		weapon_scale_z = lerp(weapon_scale_z, 1.5f, rotateWeaponAnimationSpeed);
 
@@ -350,7 +350,7 @@ void rotateWeaponAnimation() {
 			fabs(arm_upper_right_current_angle_z) < 5.0f &&
 			fabs(hand_right_current_angle - 90.0f) < 5.0f &&
 			fabs(finger_current_angle) < 5.0f &&
-			fabs(weapon_translation_x - 3.0f) < 5.0f &&
+			fabs(weapon_translation_x - 5.0f) < 5.0f &&
 			fabs(weapon_scale_y - 1.5f) < 5.0f &&
 			fabs(weapon_scale_z - 1.5f) < 5.0f) {
 			armMoved = true;
@@ -367,7 +367,7 @@ void rotateWeaponAnimation() {
 		arm_upper_right_current_angle_z = 0.0f;
 		hand_right_current_angle = 90.0f;
 		finger_current_angle = 0.0f;
-		weapon_translation_x = 2.0f;
+		weapon_translation_x = 5.0f;
 		weapon_scale_y = 1.5f;
 		weapon_scale_z = 1.5f;
 	}
@@ -382,7 +382,7 @@ void rotateWeaponAnimation() {
 void stopRotateWeaponAnimation() {
 	if (isWeaponRotating) {
 		// Stop weapon rotation first
-		weapon_rotation_angle_x = lerp(weapon_rotation_angle_x, 0.0f, rotateWeaponAnimationSpeed);
+		weapon_rotation_angle_x = lerp(weapon_rotation_angle_x, 0.0f, 0.1f);
 		audio->stopMusic();
 		if (fabs(weapon_rotation_angle_x) < 0.1f) {
 			isWeaponRotating = false;
